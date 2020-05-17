@@ -9,6 +9,9 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   strict: true,
+  //
+  //
+  //
   state: {
     //message: "My error Message",
     user: { username: null, userId: null, usercode: null },
@@ -17,17 +20,22 @@ export default new Vuex.Store({
     brokers: [],
     portfolios: []
   },
+  //
+  //
+  //
   getters: {
     getAuthenticatedAxios(state) {
       // if (this.isAuthenticated){
-        return Axios.create({
-          headers: { Authorization: `Bearer ${state.jwt}` }
-        });
+      return Axios.create({
+        headers: { Authorization: `Bearer ${state.jwt}` }
+      });
       // }else{
       //   //TODO automagically refresh auth token ans return authenticated Axios
       // }
-
     },
+    //
+    //
+    //
     isAuthenticated(state) {
       if (state.jwt == null || state.jwt.split('.').length < 3) {
         return false;
@@ -38,7 +46,13 @@ export default new Vuex.Store({
       return now < exp;
     }
   },
+  //
+  //
+  //
   mutations: {
+    //
+    //
+    //
     setAuthenticated(state, authInfo) {
       state.jwt = authInfo.jwt;
       state.authenticated = true;
@@ -48,18 +62,45 @@ export default new Vuex.Store({
       state.user.userId = jwtData.id;
       state.user.usercode = jwtData.usercode;
     },
+    //
+    //
+    //
     clearAuthentication(state) {
       state.jwt = null;
       state.authenticated = false;
       state.user.username = null;
     },
+    //
+    //
+    //
     setAddedBroker(state, data) {
       state.brokers.push(data);
       //state.brokers = data;
     },
+    //
+    //
+    //
+    setRemovedBroker(state, index) {
+      state.brokers.splice(index);
+      //state.brokers = data;
+    },
+    //
+    //
+    //
     setBrokers(state, data) {
       state.brokers = data;
     },
+    //
+    //
+    //
+    setBroker(state, data) {
+      state.brokers[data.index].name = data.broker.name;
+      //state.brokers[data.index].id = data.broker.id;
+      //state.brokers[data.index].userId = data.broker.userId;
+    },
+    //
+    //
+    //
     setPortfolios(state, data) {
       state.portfolios = data;
     }
@@ -67,8 +108,18 @@ export default new Vuex.Store({
     //   state.message = message;
     // }
   },
+  //
+  //
+  //
   actions: {
-
+    //
+    //
+    //
+    /**
+     * Sends Axios request to backend API to create a new broker entry
+     * @param {*} context the required vuex context
+     * @param {*} brokerInfo a JSON object containing broker name and requesting user's userId
+     */
     async addBrokerAction(context, brokerJSON) {
       if (context.getters.isAuthenticated) {
         try {
@@ -82,7 +133,7 @@ export default new Vuex.Store({
             context.commit("setAddedBroker", brokerJSON);
           }
         } catch (error) {
-          //     //todo forward to page!!!
+          //   TODO - handle error
           // if (error.response) {
           //   console.log(error.response.data);
           //   console.log(error.response.status);
@@ -90,44 +141,29 @@ export default new Vuex.Store({
           // }
         }
       } else {
-        //TODO go to loging screen
+        // TODO - handle error
       }
     },
-    async editBrokerAction(context, brokerJSON) {
-      if (context.getters.isAuthenticated) {
-        try {
-          const axiosResponse = await context.getters.getAuthenticatedAxios.put(
-            `${context.state.server}/api/brokers/${context.state.user.userId}/${brokerJSON.id}`
-          );
-           if (axiosResponse.status == 200) {
-            //context.commit("setBrokers", axiosResponse.data);
-          }
-        } catch (error) {
-          //     //todo forward to page!!!
-          if (error.response) {
-            // console.log(error.response.data);
-            // console.log(error.response.status);
-            // console.log(error.response.headers);
-          }
-        }
-      } else {
-        //TODO go to loging screen
-      }
-    },
+    //
+    //
+    //
+    /**
+     * Sends Axios request to backend API to get a list of brokers relevant to the current user
+     * @param {*} context the required vuex context
+     */
     async getBrokersAction(context) {
       if (context.getters.isAuthenticated) {
         try {
           const axiosResponse = await context.getters.getAuthenticatedAxios.get(
             `${context.state.server}/api/brokers/${context.state.user.userId}`
           );
-           if (axiosResponse.status == 200) {
-          //   brokerJSON['id'] = axiosResponse.data["id"]
-          //   //console.log(brokerJSON);
-
+          if (axiosResponse.status == 200) {
+            //   brokerJSON['id'] = axiosResponse.data["id"]
+            //   //console.log(brokerJSON);
             context.commit("setBrokers", axiosResponse.data);
           }
         } catch (error) {
-          //     //todo forward to page!!!
+          //    TODO - handle error
           if (error.response) {
             // console.log(error.response.data);
             // console.log(error.response.status);
@@ -135,7 +171,68 @@ export default new Vuex.Store({
           }
         }
       } else {
-        //TODO go to loging screen
+        // TODO - handle error
+      }
+    },
+    //
+    //
+    //
+    /**
+     * Sends Axios request to backend API to edit a broker entry
+     * @param {*} context the required vuex context
+     * @param {*} brokerInfo a JSON object containing a broker field and an index field representing the index of this broker on the list
+     */
+    async editBrokerAction(context, brokerInfo) {
+      if (context.getters.isAuthenticated) {
+        try {
+          const axiosResponse = await context.getters.getAuthenticatedAxios.put(
+            `${context.state.server}/api/broker/${context.state.user.userId}`, brokerInfo.broker
+          );
+          if (axiosResponse.status == 200) {
+            context.commit("setBroker", brokerInfo);
+          }
+        } catch (error) {
+          //    TODO - handle error
+          if (error.response) {
+            // console.log(error.response.data);
+            // console.log(error.response.status);
+            // console.log(error.response.headers);
+          }
+        }
+      } else {
+        // TODO - handle error
+      }
+    },
+    //
+    //
+    //
+    /**
+     * Sends Axios request to backend API to delete a broker entry
+     * @param {*} context the required vuex context
+     * @param {*} brokerInfo a JSON object containing a broker field and an index field representing the index of this broker on the list
+     */
+    async deleteBrokerAction(context, brokerInfo) {
+      if (context.getters.isAuthenticated) {
+        try {
+          const axiosResponse = await context.getters.getAuthenticatedAxios.delete(
+            // HTTP DELETE body not widely supported, etc. 
+            //https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request
+            //https://github.com/axios/axios/issues/897
+            `${context.state.server}/api/broker/${context.state.user.userId}/${brokerInfo.broker.id}` 
+          );
+          if (axiosResponse.status == 200) {
+            context.commit("setRemovedBroker", brokerInfo.index);
+          }
+        } catch (error) {
+          //    TODO - handle error
+          if (error.response) {
+            // console.log(error.response.data);
+            // console.log(error.response.status);
+            // console.log(error.response.headers);
+          }
+        }
+      } else {
+        // TODO - handle error
       }
     },
 

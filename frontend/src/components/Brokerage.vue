@@ -1,3 +1,7 @@
+<!--  
+***  2020.05.16  - Created | Broker list capability
+***  2020.05.17  - Added broker edit/delete capability
+-->
 <template>
   <div id="layoutSidenav_content">
     <div>
@@ -37,10 +41,13 @@
                     <td class="text-left">{{brkr.name}}</td>
                     <td>
                       <!-- <a href="#" class="text-success" v-on:click.prevent="broker=brkr; showEditBrokerDialog=true">  Some state issues due to other things -->
-                      <a href="#" class="text-success" v-on:click.prevent="selectedBrokerIndex=index">
+                      <!-- <a href="#" class="text-success" v-on:click.prevent="selectedBrokerIndex=index"> -->
+                      <!-- Call a function that first makes a safe copy before it launches the dialog-->
+                      <a href="#" class="text-success" v-on:click.prevent="selectedBrokerIndex=index; showEditBrokerDialogLauncher(false)">
                         <i class="fa fa-edit"></i>
-                      </a> &nbsp; &nbsp;
-                      <a href="#" class="text-danger">
+                      </a> &nbsp;| &nbsp;
+                      <!-- Call a function that first makes a safe copy before it launches the dialog-->
+                      <a href="#" class="text-danger" v-on:click.prevent="selectedBrokerIndex=index; showEditBrokerDialogLauncher(true)">
                         <i class="fa fa-trash"></i>
                       </a>
                     </td>
@@ -66,7 +73,7 @@
               </button>
             </div>
             <div class="modal-body p-4">
-              <form v-on:submit.prevent="addBroker">
+              <form v-on:submit.prevent="addBroker()">
                 <div class="form-group">
                   <input v-model="newBroker.name" class="form-control form-control-lg" placeholder="Broker name" required minlength="2" autofocus />
                 </div>
@@ -94,9 +101,37 @@
               </button>
             </div>
             <div class="modal-body p-4">
-              <form v-on:submit.prevent="editBroker">
+              <form v-on:submit.prevent="editBroker(false)">
                 <div class="form-group">
-                  <input v-model="brokerToEdit.name" class="form-control form-control-lg" placeholder="Broker name" required minlength="2" autofocus />
+                  <input v-model="safeEditBrokerInfo.broker.name" class="form-control form-control-lg" placeholder="Broker name" required minlength="2" autofocus />
+                </div>
+                <div class="form-group">
+                  <button class="btn btn-primary btn-block btn-lg" type="submit">Save</button>
+                </div>
+              </form>
+            </div>
+            <!--<div class="modal-footer">
+              <button type="button" class="btn btn-secondary" v-on:click="showAddBrokerDialog= false">Close</button>
+              <button type="button" class="btn btn-primary">Save changes</button>
+            </div>-->
+          </div>
+        </div>
+      </div>
+
+      <!-- DELETE BROKER MODAL -->
+      <div id="overlay" v-if="showDeleteBrokerDialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Delete Broker</h5>
+              <button type="button" class="close" v-on:click="cancelBrokerDialog" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body p-4">
+              <form v-on:submit.prevent="editBroker(true)">
+                <div class="form-group">
+                  <input v-model="safeEditBrokerInfo.broker.name" class="form-control form-control-lg" placeholder="Broker name" required minlength="2" autofocus />
                 </div>
                 <div class="form-group">
                   <button class="btn btn-primary btn-block btn-lg" type="submit">Save</button>
@@ -125,7 +160,7 @@ export default {
       showEditBrokerDialog: false,
       showDeleteBrokerDialog: false,
       newBroker: { name: null },
-      brokerToEdit: { name: null },
+      safeEditBrokerInfo: { broker: { name: null } },
       selectedBrokerIndex: -1
     };
   },
@@ -133,15 +168,23 @@ export default {
     ...mapState(["user", "brokers"])
   },
   methods: {
-    ...mapActions(["addBrokerAction", "getBrokersAction", "editBrokerAction"]),
+    ...mapActions(["addBrokerAction", "getBrokersAction", "editBrokerAction", "deleteBrokerAction"]),
+    //
+    //
+    //
     cancelBrokerDialog() {
       this.newBroker = { name: null };
-      this.showAddBrokerDialog = false;
 
+      this.showAddBrokerDialog = false;
       this.showEditBrokerDialog = false;
-      this.brokerToEdit = { name: null };
+      this.showDeleteBrokerDialog = false;
+
+      this.safeEditBrokerInfo = { broker: { name: null } };
       this.selectedBrokerIndex = -1;
     },
+    //
+    //
+    //
     async addBroker() {
       //e.preventDefault() - already blocked with modifier
 
@@ -153,17 +196,39 @@ export default {
 
       this.cancelBrokerDialog();
     },
-    async editBroker() {
-      //create a safe copy of the selected broker (avoid screwing with vuex state and also in case the user cancels)
-      this.brokerToEdit = { name: this.brokers[this.selectedBrokerIndex].name };
-      console.log("Yah");
-      console.log(this.brokers[this.selectedBrokerIndex]);
-
-      this.showEditBrokerDialog=true
-
-      //this.editBrokerAction(this.broker);
-
-      //this.cancelBrokerDialog();
+    //
+    //
+    //
+    async editBroker(isDelete) {
+      if (isDelete) {
+        this.deleteBrokerAction(this.safeEditBrokerInfo);
+      } else {
+        this.editBrokerAction(this.safeEditBrokerInfo);
+      }
+      this.cancelBrokerDialog();
+    },
+    //
+    //
+    //
+    showEditBrokerDialogLauncher(isDelete) {
+      //make a safe copy of the selected broker - this avoids:
+      // a) Messing with the Vuex state directly if we use the currently rendered object (rather than its safe copy)
+      // b) Ensure that if a user cancels the edit mid-way, we don't have to worry about restoring a bount object
+      const selectedBroker = this.brokers[this.selectedBrokerIndex];
+      this.safeEditBrokerInfo = {
+        broker: {
+          id: selectedBroker.id,
+          name: selectedBroker.name,
+          userId: selectedBroker.userId
+        },
+        index: this.selectedBrokerIndex
+      };
+      if (isDelete) {
+        this.showDeleteBrokerDialog = true;
+      } else {
+        //trigger the modal Edit dialog
+        this.showEditBrokerDialog = true;
+      }
     }
   },
   created() {
