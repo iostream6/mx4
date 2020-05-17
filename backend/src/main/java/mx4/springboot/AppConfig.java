@@ -68,7 +68,7 @@ public class AppConfig extends WebSecurityConfigurerAdapter implements WebMvcCon
         // https://gist.github.com/CSKNK/4e4adde53a9c54f94e25e8a72f1251e8  https://gist.github.com/CSKNK/4e4adde53a9c54f94e25e8a72f1251e8
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:3500"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
         //configuration.setAllowCredentials(Boolean.TRUE);
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
