@@ -1,0 +1,67 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# Exclude Spring Application properties file
+application.properties
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Eclipse related
+.settings
+.project
+.classpath
+.studio
+target
+
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control
+.vscode/
+
+# Backend exclusions
+/backend/src/main/resources/public/
+/backend/target/
+
+
+# Frontend exclusions
+/frontend/target/
+/frontend/dist/
+/frontend/node_modules/
+/frontend/npm-debug.log
+/frontend/test-output
+/frontend/tests/e2e/reports
+/frontend/tests/unit/coverage
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Other editor directories and files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
