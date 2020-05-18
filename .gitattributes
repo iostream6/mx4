@@ -1,0 +1,6 @@
+#  Github language detection hints
+#https://stackoverflow.com/a/13599737
+
+frontend/node_modules/* linguist-vendored
+
+*.vue linguist-language=JavaScript
