@@ -19,21 +19,17 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.ModelAndView;
 
 /**
  *
  * @author Ilamah, Osho
  */
 @RestController
-
 public class UserService {
 
     //private static final String TYPE = "User";
@@ -51,18 +47,6 @@ public class UserService {
 
     @Autowired
     private TokenManager tokenManager;
-
-    @GetMapping("/dashboard")
-    public ModelAndView dashboard() {
-        ModelAndView modelAndView = new ModelAndView();
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = userRepository.findByUsername(auth.getName());
-        modelAndView.addObject("currentUser", user);
-        modelAndView.addObject("fullName", "Welcome " + user.getFullname());
-        modelAndView.addObject("adminMessage", "Content Available Only for Users with Admin Role");
-        modelAndView.setViewName("dashboard");
-        return modelAndView;
-    }
 
     @PostMapping(value = {"/authenticate", "/signin"})
     public ResponseEntity<?> handleAuthenticationRequest(@RequestBody AuthenticationRequestModel arm) throws Exception {

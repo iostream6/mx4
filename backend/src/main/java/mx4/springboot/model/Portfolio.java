@@ -11,13 +11,14 @@ public class Portfolio {
 
     private String id;
     private String name;
-       
+
     /**
      * A short code identifying this portfolio. Example: IBKR
      */
     private String code;
+    
     private String brokerId;
-
+    
     public String getId() {
         return id;
     }
@@ -53,23 +54,23 @@ public class Portfolio {
     public static class PortfolioUser {
 
         private long id;
-        
+
         private String portfolioID;
 
-        private String userCode;
-        
+        private String userId;
+
         private boolean read;
-        
+
         private boolean write;
-        
+
         private double stake;
 
         public PortfolioUser() {
         }
 
-        public PortfolioUser(String portfolioID, String userCode, boolean read, boolean write, double stake) {
+        public PortfolioUser(String portfolioID, String userId, boolean read, boolean write, double stake) {
             this.portfolioID = portfolioID;
-            this.userCode = userCode;
+            this.userId = userId;
             this.read = read;
             this.write = write;
             this.stake = stake;
@@ -91,12 +92,12 @@ public class Portfolio {
             this.portfolioID = portfolioID;
         }
 
-        public String getUserCode() {
-            return userCode;
+        public String getUserId() {
+            return userId;
         }
 
-        public void setUserCode(String userCode) {
-            this.userCode = userCode;
+        public void setUserId(String userId) {
+            this.userId = userId;
         }
 
         public boolean isRead() {
@@ -122,8 +123,6 @@ public class Portfolio {
         public void setStake(double stake) {
             this.stake = stake;
         }
-        
-        
 
     }
 

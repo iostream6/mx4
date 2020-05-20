@@ -9,11 +9,11 @@ package mx4.springboot.model;
  */
 public class Broker {
 
-    private String name = "";//make sure always non-null
+    private String name;
 
-    private String id = "";//make sure always non-null
+    private String id;
 
-    private String userId; //make sure always non-null
+    private String userId;
 
     public String getName() {
         return name;
