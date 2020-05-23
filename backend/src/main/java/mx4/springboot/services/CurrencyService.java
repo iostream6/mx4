@@ -1,6 +1,7 @@
 /*
  * 2020.04.03  - Created | Base functionality QC'ed
  * 2020.05.01  - Path security QC'd
+ * 2020.05.23  - Removed "readOne" and use ResponseEntity return values
  */
 package mx4.springboot.services;
 
@@ -14,6 +15,8 @@ import mx4.springboot.model.Currency;
 import mx4.springboot.model.Currency.Exchange;
 import org.openide.util.Lookup;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,8 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 public class CurrencyService {
 
-    private static final String TYPE = "Currency";
-
     @Autowired
     private ExchangeRepository exchangeRepository;
 
@@ -40,24 +41,22 @@ public class CurrencyService {
         return currencyList;
     }
 
-    @GetMapping("/currencies/{id}")
-    public Currency readOne(@PathVariable String id) {
-        final long currencyID = Long.parseLong(id);
-        final Optional<Currency> optional = currencyList.stream().filter(c -> c.getCurrencyID() == currencyID).findFirst();
-        //return currencyList.stream().filter(x -> x.getCurrencyID() == currencyID).findAny().orElse(new Currency());
-        return optional.orElseThrow(() -> new ItemNotFoundException(id, TYPE));  //will be caught and customized by (@ControllerAdvice) class ItemNotFoundAdvicer
-    }
-
     //-------------------
     @GetMapping("/exchange/{from}/{to}")
-    public Exchange convert(@PathVariable String from, @PathVariable String to) {
-        final long fromCurrencyID = Long.parseLong(from);
-        final long toCurrencyID = Long.parseLong(to);
-        return exchangeRepository.findByFromIDAndToID(fromCurrencyID, toCurrencyID).orElseThrow(() -> new ItemNotFoundException(fromCurrencyID + "->" + toCurrencyID, TYPE));
-
+    public ResponseEntity<?> convert(@PathVariable String from, @PathVariable String to) {
+        try {
+            final long fromCurrencyID = Long.parseLong(from);
+            final long toCurrencyID = Long.parseLong(to);
+            final Optional<Exchange> xeOptional = exchangeRepository.findByFromIDAndToID(fromCurrencyID, toCurrencyID);
+            if (xeOptional.isPresent()) {
+                ResponseEntity.ok(xeOptional.get());
+            }
+        } catch (Exception e) {
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
-    @PutMapping("/exchange")//OK
+    @PutMapping("/exchanges")//TODO Please check
     public List<Exchange> updateExchangRates() {
         ExchangeRateServiceProvider erp = Lookup.getDefault().lookup(ExchangeRateServiceProvider.class);
         if (erp != null) {
@@ -65,7 +64,7 @@ public class CurrencyService {
             exchangeRepository.saveAll(exchanges);
             return exchanges;
         } else {
-            throw new ItemNotFoundException("Exchange Rate Provider", TYPE);
+            return Collections.EMPTY_LIST;
         }
     }
 
@@ -104,7 +103,7 @@ public class CurrencyService {
         currency.setName("GB Pence");
         currencies.add(currency);
 
-        //initilize the Euro's
+        //initilize the Euros
         currency = new Currency();
         currency.setCode("EUR");
         currency.setSymbol("€");
@@ -112,7 +111,7 @@ public class CurrencyService {
         currency.setName("Euros");
         currencies.add(currency);
 
-        //initilize the Queen's Pence
+        //initilize the Euro Cents
         currency = new Currency();
         currency.setCode("EURX");
         currency.setSymbol("c");
