@@ -1,8 +1,5 @@
 <template>
-  <div class="hello">
-    <div>
-      <app-nav-bar />
-    </div>
+  <div>
     <div>
       <h3>Places</h3>
       <ul>
@@ -20,13 +17,10 @@
 
 <script>
 
-import AppNavBar from "../components/AppNavBar";
-
 import { mapState } from "vuex";
 
 export default {
   name: "Home",
-  components: { AppNavBar },
   computed: {
     ...mapState(["user", "jwt"])
   },

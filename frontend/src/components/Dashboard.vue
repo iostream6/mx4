@@ -58,8 +58,43 @@
 </template>
 
 <script>
+import { mapState, mapActions, mapGetters, mapMutations } from "vuex";
+
 export default {
-  name: "Dashboard"
+  name: "Dashboard",
+  computed: {
+    ...mapState(["isBasicDataGotten"]),
+    // isJWTValid returns a function so even though computed, it is not cached
+    ...mapGetters(["isJWTValid"])
+  },
+  methods: {
+    ...mapActions([
+      "getBasicDataAction",
+      "refreshTokenAction"
+    ]),
+    ...mapMutations(["clearAuthentication"])
+  },
+  mounted() {
+     let loggedIn = this.isJWTValid(new Date());
+
+    if (!loggedIn) {
+      this.refreshTokenAction();
+      //if after refresh attempt, still not valid? Force signin
+      loggedIn = this.isJWTValid(new Date());
+      if (!loggedIn) {
+        this.clearAuthentication();
+        this.$router.push("/");
+      }
+    }
+    //load brokers if needed
+    if (loggedIn && !this.isBasicDataGotten) {
+      this.getBasicDataAction();
+    }
+  //   // //load transactions - if needed
+  //   // if (loggedIn && !this.isBrokersGotten) {
+  //   //   this.getBrokersAction();
+  //   // }
+   }
 };
 </script>
 

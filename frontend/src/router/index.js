@@ -1,7 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import LandingView from '../views/LandingView.vue'
-import SigninView from '../views/SigninView.vue'
 import MainView from '../views/MainView.vue'
 //
 import ErrorView from '../views/ErrorView.vue'
@@ -17,22 +16,16 @@ Vue.use(VueRouter)
     component: LandingView
   },
   {
-    path: '/signin',
-    name: 'SigninView',
-    component: SigninView
-  },
-  {
     path: '/main',
     name: 'MainView',
     component: MainView,
     beforeEnter(to, from, next){
-      if(dataStore.getters.isAuthenticated){
+      if(dataStore.getters.isJWTValid(new Date())){
         next();
       }else{
-        next("/signin");
+        next("/");
       }
     }
-
   },
   {
     path: '/error',

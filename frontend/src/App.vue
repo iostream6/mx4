@@ -1,8 +1,25 @@
 <template>
   <div id="app">
-    <router-view/>
+    <router-view />
   </div>
 </template>
+
+
+<script>
+import { mapActions } from "vuex";
+
+export default {
+  methods: {
+    ...mapActions(["reloadStateAction"])
+  },
+  created() {
+    //console.log("App Created ^ Reloading state");
+    this.reloadStateAction();
+  }
+
+};
+</script>
+
 
 <style>
 #app {

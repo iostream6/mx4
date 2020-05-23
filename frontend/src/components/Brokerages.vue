@@ -38,7 +38,9 @@
                 </thead>
                 <tbody>
                   <tr v-for="(brkr, index) in brokers" v-bind:key="index">
+                    <!-- <td class="text-left">{{brkr.name}}</td> -->
                     <td class="text-left">{{brkr.name}}</td>
+                    <!-- <router-link class="nav-link" to="/main">App</router-link> -->
                     <td>
                       <!-- <a href="#" class="text-success" v-on:click.prevent="broker=brkr; showEditBrokerDialog=true">  Some state issues due to other things -->
                       <!-- <a href="#" class="text-success" v-on:click.prevent="selectedBrokerIndex=index"> -->
@@ -131,10 +133,11 @@
             <div class="modal-body p-4">
               <form v-on:submit.prevent="editBroker(true)">
                 <div class="form-group">
-                  <input v-model="safeEditBrokerInfo.broker.name" class="form-control form-control-lg" placeholder="Broker name" required minlength="2" autofocus />
+                  <!--<input v-model="safeEditBrokerInfo.broker.name" class="form-control form-control-lg" readonly required minlength="2" autofocus /> -->
+                  <div class="alert alert-danger text-left">This action will delete '{{safeEditBrokerInfo.broker.name}}'</div>
                 </div>
                 <div class="form-group">
-                  <button class="btn btn-primary btn-block btn-lg" type="submit">Save</button>
+                  <button class="btn btn-primary btn-block btn-lg" type="submit">Delete</button>
                 </div>
               </form>
             </div>
@@ -150,10 +153,10 @@
 </template>
 
 <script>
-import { mapState, mapActions } from "vuex";
+import { mapState, mapActions, mapGetters, mapMutations } from "vuex";
 
 export default {
-  name: "Brokerage",
+  name: "Brokerages",
   data() {
     return {
       showAddBrokerDialog: false,
@@ -161,14 +164,25 @@ export default {
       showDeleteBrokerDialog: false,
       newBroker: { name: null },
       safeEditBrokerInfo: { broker: { name: null } },
-      selectedBrokerIndex: -1
+      selectedBrokerIndex: -1,
+
+      showAddPortfolioDialog: false,
+      selectedPortfolioIndex: -1
     };
   },
   computed: {
-    ...mapState(["user", "brokers"])
+    ...mapState(["user", "brokers"]),
+    // isJWTValid returns a function so even though computed, it is not cached
+    ...mapGetters(["isJWTValid"])
   },
   methods: {
-    ...mapActions(["addBrokerAction", "getBrokersAction", "editBrokerAction", "deleteBrokerAction"]),
+    ...mapActions([
+      "addBrokerAction",
+      "editBrokerAction",
+      "deleteBrokerAction",
+      "refreshTokenAction"
+    ]),
+    ...mapMutations(["clearAuthentication"]),
     //
     //
     //
@@ -188,18 +202,38 @@ export default {
     async addBroker() {
       //e.preventDefault() - already blocked with modifier
 
+      if (!this.isJWTValid(new Date())) {
+        this.refreshTokenAction();
+        //if after refresh attempt, still not valid? Force signin
+        if (!this.isJWTValid(new Date())) {
+          this.cancelBrokerDialog();
+          this.clearAuthentication();
+          this.$router.push("/");
+          return;
+        }
+      }
       const data = {
-        name: this.broker.name,
+        name: this.newBroker.name,
         userId: this.user.userId
       };
       this.addBrokerAction(data);
-
       this.cancelBrokerDialog();
     },
     //
     //
     //
     async editBroker(isDelete) {
+      if (!this.isJWTValid(new Date())) {
+        this.refreshTokenAction();
+        //if after refresh attempt, still not valid? Force signin
+        if (!this.isJWTValid(new Date())) {
+          this.cancelBrokerDialog();
+          this.clearAuthentication();
+          this.$router.push("/");
+          return;
+        }
+      }
+
       if (isDelete) {
         this.deleteBrokerAction(this.safeEditBrokerInfo);
       } else {
@@ -213,7 +247,7 @@ export default {
     showEditBrokerDialogLauncher(isDelete) {
       //make a safe copy of the selected broker - this avoids:
       // a) Messing with the Vuex state directly if we use the currently rendered object (rather than its safe copy)
-      // b) Ensure that if a user cancels the edit mid-way, we don't have to worry about restoring a bount object
+      // b) Ensure that if a user cancels the edit mid-way, we don't have to worry about restoring a bound object
       const selectedBroker = this.brokers[this.selectedBrokerIndex];
       this.safeEditBrokerInfo = {
         broker: {
@@ -231,9 +265,7 @@ export default {
       }
     }
   },
-  created() {
-    this.getBrokersAction();
-  }
+
 };
 </script>
 

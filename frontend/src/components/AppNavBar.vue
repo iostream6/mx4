@@ -15,10 +15,10 @@
                 <span class="sr-only">(current)</span>
               </router-link>
             </li>
-            <li class="nav-item" v-if="user.username">
+            <li class="nav-item" v-if="authenticated">
               <router-link class="nav-link" to="/main">App</router-link>
             </li>
-            <li class="nav-item dropdown" v-if="user.username">
+            <li class="nav-item dropdown" v-if="authenticated">
               <a class="nav-link dropdown-toggle" id="userDropdown" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <i class="fa fa-user fa-fw"></i>
               </a>
@@ -42,15 +42,17 @@ import { mapState, mapGetters, mapMutations } from "vuex";
 export default {
   name: "AppNavBar",
   computed: {
-    ...mapState(["server", "user", "jwt"]),
-    ...mapGetters(["getAuthenticatedAxios", "isAuthenticated"])
+    ...mapState(["server", "user", "authenticated"]),
+    ...mapGetters(["getAuthenticatedAxios"]),
+    // isJWTValid returns a function so even though computed, it is not cached
+    ...mapGetters(["isJWTValid"])
   },
   props: {},
   methods: {
     ...mapMutations(["clearAuthentication"]),
     async handleSignout(e) {
       e.preventDefault();
-      if (this.isAuthenticated) {
+      if (this.isJWTValid(new Date()) == true) {
         //prepare the validated data
         let signoutData = {
           token: this.jwt
@@ -66,9 +68,10 @@ export default {
           }
         } catch (error) {
           //     //todo forward to page!!!
-          //     console("Response !!!");
-          //     console.error(
+
         }
+      }else{
+        this.clearAuthentication();
       }
     }
   }

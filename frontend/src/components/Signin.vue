@@ -1,6 +1,5 @@
 <template>
   <div>
-    <app-nav-bar />
     <div>
       <div id="logreg-forms">
         <!-- Container for the main signup form -->
@@ -11,12 +10,12 @@
             <!-- Basically, the onclick event bubbles up to the form and triggers validation on the form - if it passes, the submit event is triggers-->
             <div class="form-group">
               <h1 class="h3 mb-3 font-weight-normal" style="text-align: center">Sign in</h1>
-              <input type="text" class="form-control" v-bind:class="{'is-invalid': response['username']}" v-model="userdata.username" placeholder="Username" required autofocus />
-              <div class="invalid-feedback">{{response['username']}}</div>
+              <input type="text" class="form-control" v-bind:class="{'is-invalid': response['username-error']}" v-model="userdata.username" placeholder="Username" required autofocus />
+              <div class="invalid-feedback">{{response['username-error']}}</div>
             </div>
             <div class="form-group">
-              <input type="password" class="form-control" v-bind:class="{'is-invalid': response['password']}" v-model="userdata.password" placeholder="Password" required />
-              <div class="invalid-feedback">{{response['password']}}</div>
+              <input type="password" class="form-control" v-bind:class="{'is-invalid': response['password-error']}" v-model="userdata.password" placeholder="Password" required />
+              <div class="invalid-feedback">{{response['password-error']}}</div>
             </div>
             <button class="btn btn-primary btn-block" type="submit">
               <i class="fa fa-sign-in"></i> Sign in
@@ -50,27 +49,27 @@
             <!-- The event hanler is attached to the form, rather than the submit button (@onclick) event, allowing the inbuit HTML5 attribute based validation to take effect-->
             <!-- Basically, the onclick event bubbles up to the form and triggers validation on the form - if it passes, the submit event is triggers-->
             <div class="form-group">
-              <input type="text" class="form-control" v-model="userdata.fullname" v-bind:class="{'is-invalid': response['fullname']}" placeholder="Full name" required minlength="3" autofocus />
-              <div class="invalid-feedback">{{response['fullname']}}</div>
+              <input type="text" class="form-control" v-model="userdata.fullname" v-bind:class="{'is-invalid': response['fullname-error']}" placeholder="Full name" required minlength="3" autofocus />
+              <div class="invalid-feedback">{{response['fullname-error']}}</div>
             </div>
             <hr />
             <div class="form-group">
-              <input type="text" class="form-control" v-model="userdata.username" v-bind:class="{'is-invalid': response['username']}" placeholder="Username" required minlength="3" autofocus />
-              <div class="invalid-feedback">{{response['username']}}</div>
+              <input type="text" class="form-control" v-model="userdata.username" v-bind:class="{'is-invalid': response['username-error']}" placeholder="Username" required minlength="3" autofocus />
+              <div class="invalid-feedback">{{response['username-error']}}</div>
             </div>
             <div class="form-group">
-              <input type="email" class="form-control" v-model="userdata.email" v-bind:class="{'is-invalid': response['email']}" placeholder="Email address" required autofocus />
-              <div class="invalid-feedback">{{response['email']}}</div>
+              <input type="email" class="form-control" v-model="userdata.email" v-bind:class="{'is-invalid': response['email-error']}" placeholder="Email address" required autofocus />
+              <div class="invalid-feedback">{{response['email-error']}}</div>
             </div>
             <hr />
 
             <div class="form-group">
-              <input type="password" class="form-control" v-model="userdata.password" v-bind:class="{'is-invalid': response['password']}" placeholder="Password" required minlength="6" />
-              <div class="invalid-feedback">{{response['password']}}</div>
+              <input type="password" class="form-control" v-model="userdata.password" v-bind:class="{'is-invalid': response['password-error']}" placeholder="Password" required minlength="6" />
+              <div class="invalid-feedback">{{response['password-error']}}</div>
             </div>
             <div class="form-group">
-              <input type="password" class="form-control" id="inputPassword2" v-model="password2" v-bind:class="{'is-invalid': response['password']}" placeholder="Re-enter password" required />
-              <div class="invalid-feedback">{{response['password']}}</div>
+              <input type="password" class="form-control" id="inputPassword2" v-model="password2" v-bind:class="{'is-invalid': response['password-error']}" placeholder="Re-enter password" required />
+              <div class="invalid-feedback">{{response['password-error']}}</div>
             </div>
             <hr />
             <button class="btn btn-primary btn-block" type="submit">
@@ -90,17 +89,17 @@
 </template>
 
 <script>
-import AppNavBar from "../components/AppNavBar";
 import Axios from "axios";
-import { mapState, mapMutations } from "vuex";
+import { mapState, mapGetters, mapMutations } from "vuex";
 
 // TODO - use a signle view for singin/up/reset and decide which subview based on URL args
 
 export default {
   name: "SigninView",
-  components: { AppNavBar },
   computed: {
-    ...mapState(["server", "authenticated", "user"])
+    ...mapState(["server", "user"]),
+    // isJWTValid returns a function so even though computed, it is not cached
+    ...mapGetters(["isJWTValid"])
   },
   data() {
     return {
@@ -108,17 +107,15 @@ export default {
       password2: "",
       response: {
         success: true,
-        code: 200,
-        email: null,
-        username: null,
-        fullname: null,
-        password: null
+        "email-error": null,
+        "username-error": null,
+        "fullname-error": null,
+        "password-error": null
       },
       userdata: { fullname: null, username: null, password: null, email: null }
     };
   },
   methods: {
-    //...mapActions(["authenticate"]),
     ...mapMutations(["clearAuthentication", "setAuthenticated"]),
 
     async handleAuth(e) {
@@ -129,15 +126,12 @@ export default {
       //clear the and results flag
       this.response = {
         success: true,
-        code: 200,
-        email: null,
-        username: null,
-        fullname: null,
-        password: null
+        "email-error": null,
+        "username-error": null,
+        "fullname-error": null,
+        "password-error": null
       };
-
       this.clearAuthentication();
-
       await Axios.post(
         `${this.server}/authenticate`,
         thisInstanceObject.userdata
@@ -145,19 +139,18 @@ export default {
         .then(function(axiosResponse) {
           if (axiosResponse.data.success == true) {
             //mutations can only take one additional arg, so we construct a new multi-part object to move everything in one arg
-            let authInfo = {
+            const authInfo = {
               jwt: axiosResponse.data.jwt,
-              username: thisInstanceObject.userdata["username"] //was auto wrapped by Vue??
+              persist: true
             };
             thisInstanceObject.setAuthenticated(authInfo);
-            thisInstanceObject.$router.push("/");
+            thisInstanceObject.$router.push("/main");
           } else {
             //login failed
             thisInstanceObject.response = axiosResponse.data;
           }
         })
         .catch(error => {
-          //todo forward to page!!!
           console.log(error);
         });
     },
@@ -206,7 +199,7 @@ export default {
         //console.error(error);
       }
     }
-  }
+  },
 };
 </script>
 

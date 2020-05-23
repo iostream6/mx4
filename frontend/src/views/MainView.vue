@@ -24,8 +24,9 @@
               </a>
               <div class="collapse" id="collapseLayouts" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
                 <nav class="sb-sidenav-menu-nested nav">
-                  <a class="nav-link" href="#" v-on:click="activeComponent='brokerage'">Brokerages</a>
-                  <a class="nav-link" href="layout-sidenav-light.html">Transactions</a>
+                  <a class="nav-link" href="#" v-on:click="activeComponent='brokerages'">Brokerages</a>
+                  <a class="nav-link" href="#" v-on:click="activeComponent='portfolios'">Portfolios</a>
+                  <a class="nav-link" href="#" v-on:click="activeComponent='transactions'">Transactions</a>
                 </nav>
               </div>
               <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="false" aria-controls="collapsePages">
@@ -88,7 +89,13 @@
 
 
       <!-- Main area content for Brokerage link -->
-      <brokerage v-if="activeComponent==='brokerage'"/>
+      <brokerages v-if="activeComponent==='brokerages'"/>
+
+      <!-- Main area content for Portfolio link -->
+      <portfolios v-if="activeComponent==='portfolios'"/>
+
+      <!-- Main area content for Transactions link -->
+      <transactions v-if="activeComponent==='transactions'"/>
       
     </div>
   </div>
@@ -99,11 +106,13 @@
 
 import AppNavBar from "../components/AppNavBar";
 import Dashboard from "../components/Dashboard";
-import Brokerage from "../components/Brokerage";
+import Brokerages from "../components/Brokerages";
+import Portfolios from "../components/Portfolios";
+import Transactions from "../components/Transactions";
 
 export default {
   name: "MainView",
-  components: { AppNavBar, Dashboard, Brokerage},
+  components: { AppNavBar, Dashboard, Brokerages, Portfolios, Transactions},
   data() {
     return { activeComponent: "dashboard" };
   },
