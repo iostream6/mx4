@@ -35,21 +35,6 @@ public class Instrument {
     private long companyID;
 
     /**
-     * A String representation of the Bloomberg search string for this instrument, if any.
-     */
-    private String bloombergQuoteString;
-
-    /**
-     * A String representation of the Google search string for this instrument, if any.
-     */
-    private String googleQuoteString;
-
-    /**
-     * A String representation of the FT search string for this instrument, if any.
-     */
-    private String ftQuoteString;
-
-    /**
      * A String description for this instrument.
      */
     private String description;
@@ -96,30 +81,6 @@ public class Instrument {
 
     public void setCompanyID(long companyID) {
         this.companyID = companyID;
-    }
-
-    public String getBloombergQuoteString() {
-        return bloombergQuoteString;
-    }
-
-    public void setBloombergQuoteString(String bloombergQuoteString) {
-        this.bloombergQuoteString = bloombergQuoteString;
-    }
-
-    public String getGoogleQuoteString() {
-        return googleQuoteString;
-    }
-
-    public void setGoogleQuoteString(String googleQuoteString) {
-        this.googleQuoteString = googleQuoteString;
-    }
-
-    public String getFtQuoteString() {
-        return ftQuoteString;
-    }
-
-    public void setFtQuoteString(String ftQuoteString) {
-        this.ftQuoteString = ftQuoteString;
     }
 
     public String getDescription() {

@@ -4,6 +4,7 @@
 package mx4.springboot.persistence;
 
 import java.util.List;
+import java.util.Optional;
 import mx4.springboot.model.Portfolio.PortfolioUser;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
@@ -13,10 +14,14 @@ import org.springframework.data.mongodb.repository.MongoRepository;
  */
 public interface PortfolioUserRepository extends MongoRepository<PortfolioUser, String> {
 
-    public void deleteByPortfolioIDAndUserCode(String portfolioID, String userCode);
+//    public void deleteByPortfolioIDAndUserId(String portfolioID, String userId);
 
-    public List<PortfolioUser> findByUserCode(String userCode);
-
+    public void deleteByPortfolioID(String portfolioID);
+    
+    public Optional<PortfolioUser> findByUserIdAndPortfolioID(String userId, String portfolioID);
+//
+    public List<PortfolioUser> findByUserId(String userId);
+//
     public List<PortfolioUser> findByPortfolioID(String portfolioID);
 
 

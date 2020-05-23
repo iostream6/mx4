@@ -56,13 +56,13 @@ public class UserService {
         } catch (AuthenticationException e) {
             responseData.put("success", false);
             if (e instanceof DisabledException) {
-                responseData.put("username", "Account is disabled");
+                responseData.put("username-error", "Account is disabled");
             } else if (e instanceof LockedException) {
-                responseData.put("username", "Account is locked");
+                responseData.put("username-error", "Account is locked");
             } else {
                 //BadCredentialsException, UsernameNotFoundException, etc
-                responseData.put("username", "Invalid username for password");
-                responseData.put("password", "Invalid password for username");
+                responseData.put("username-error", "Invalid username for password");
+                responseData.put("password-error", "Invalid password for username");
             }
             return ResponseEntity.ok(responseData);
         }
@@ -112,11 +112,11 @@ public class UserService {
         user.setEmail(user.getEmail().toLowerCase());
 
         if (userRepository.findByEmail(user.getEmail()) != null) {
-            clientInfo.put("email", "There is already a user registered with the email provided");
+            clientInfo.put("email-error", "There is already a user registered with the email provided");
         }
 
         if (userRepository.findByUsername(user.getUsername()) != null) {
-            clientInfo.put("username", "There is already a user registered with the username provided");
+            clientInfo.put("username-error", "There is already a user registered with the username provided");
         }
 
         if (clientInfo.size() > 0) {

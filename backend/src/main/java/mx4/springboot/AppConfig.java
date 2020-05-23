@@ -67,7 +67,7 @@ public class AppConfig extends WebSecurityConfigurerAdapter implements WebMvcCon
         //https://github.com/axios/axios/issues/858
         // https://gist.github.com/CSKNK/4e4adde53a9c54f94e25e8a72f1251e8  https://gist.github.com/CSKNK/4e4adde53a9c54f94e25e8a72f1251e8
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3500"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3500", "http://localhost:8080"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
         //configuration.setAllowCredentials(Boolean.TRUE);
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
