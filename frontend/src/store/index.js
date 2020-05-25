@@ -12,6 +12,7 @@ import Axios from "axios";
 Vue.use(Vuex)
 
 const AUTH_STORAGE_KEY = "xtinfo";
+const ADMIN_ROLE = "ADMIN";
 
 export default new Vuex.Store({
   strict: true,
@@ -27,8 +28,19 @@ export default new Vuex.Store({
     portfolios: [],
     currencies: [],
     isBasicDataGotten: false,
+    isBasicAdminDataGotten: false,
     isTransactionsGotten: false,
+    isAdminUser: false,
     authenticated: false,
+    instrumentTypes: ["STOCK", "CASH", "BOND", "DEBT"],
+    instrumentDomiciles: [{ "code": "USA", "name": "United States" },
+    { "code": "UK", "name": "United Kingdom" },
+    { "code": "FRA", "name": "France" },
+    { "code": "SPA", "name": "Spain" },
+    { "code": "NGR", "name": "Nigeria" },
+    { "code": "CHN", "name": "China" }],
+    sectors: [],
+    supportedInstruments: [],
   },
   //
   //
@@ -75,6 +87,10 @@ export default new Vuex.Store({
       state.user.usercode = jwtData.usercode;
       state.user.username = jwtData.sub;
 
+      const userRoles = jwtData.roles;
+
+      state.isAdminUser = (userRoles.indexOf(ADMIN_ROLE) > -1);
+
       console.log("set Authenticated Called and passed");
 
       if (authInfo.persist) {
@@ -117,8 +133,6 @@ export default new Vuex.Store({
     //
     setAddedPortfolio(state, data) {
       state.portfolios.push(data);
-      console.log("Added !!");
-      console.log(data);
     },
     //
     //
@@ -136,12 +150,28 @@ export default new Vuex.Store({
     //
     //
     //
+    setAddedInstrument(state, data) {
+      state.supportedInstruments.push(data);
+    },
+    //
+    //
+    //
     setBasicData(state, data) {
       state.currencies = data["currencies"];
       state.brokers = data["brokers"];
       state.portfolios = data["portfolios"];
       state.isBasicDataGotten = true;
+    },
+    //
+    //
+    //
+    setBasicAdminData(state, data) {
+      state.entities = data["entities"];
+      state.sectors = data["sectors"];
+      state.supportedInstruments = data["instruments"];
+      state.isBasicAdminDataGotten = true;
     }
+    //
   },
   //
   //
@@ -200,7 +230,7 @@ export default new Vuex.Store({
         const axiosResponse = await context.getters.getAuthenticatedAxios.post(
           `${context.state.server}/api/brokers`, brokerJSON
         );
-        if (axiosResponse.data["id"]) {
+        if (axiosResponse.status == 200) {
           brokerJSON['id'] = axiosResponse.data["id"];
           context.commit("setAddedBroker", brokerJSON);
         }
@@ -263,14 +293,14 @@ export default new Vuex.Store({
     /**
      * Sends Axios request to backend API to create a new portfolio entry
      * @param {*} context the required vuex context
-     * @param {*} brokerInfo a JSON object containing broker name and requesting user's userId
+     * @param {*} requestData a JSON object containing broker info (ex id)
      */
     async addPortfolioAction(context, requestData) {
       try {
         const axiosResponse = await context.getters.getAuthenticatedAxios.post(
           `${context.state.server}/api/portfolios/${context.state.user.userId}`, requestData
         );
-        if (axiosResponse.data["id"]) {
+        if (axiosResponse.status == 200) {
           requestData['id'] = axiosResponse.data["id"];
           requestData['users'] = axiosResponse.data["users"]
           context.commit("setAddedPortfolio", requestData);
@@ -329,6 +359,27 @@ export default new Vuex.Store({
         }
       }
     },
+    //
+    //
+    //
+    /**
+     * Sends Axios request to backend API to create a new instrument entry
+     * @param {*} context the required vuex context
+     * @param {*} requestData a JSON object containing instruments infomation (ex id)
+     */
+    async addInstrumentAction(context, requestData) {
+      try {
+        const axiosResponse = await context.getters.getAuthenticatedAxios.post(
+          `${context.state.server}/admin/instruments`, requestData
+        );
+        if (axiosResponse.status == 200) {
+          requestData['id'] = axiosResponse.data["id"];
+          context.commit("setAddedInstrument", requestData);
+        }
+      } catch (error) {
+        //   TODO - handle error
+      }
+    },
     /**
      * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
      * user as well as supported currencies
@@ -376,6 +427,46 @@ export default new Vuex.Store({
           // console.log(error.response.data);
           // console.log(error.response.status);
           // console.log(error.response.headers);
+        }
+      }
+    },
+    /**
+ * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
+ * user as well as supported currencies
+ * @param {*} context the required vuex context
+ */
+    async getBasicAdminDataAction(context) {
+      try {
+        let results = {};
+        //entities
+        let axiosResponse = await context.getters.getAuthenticatedAxios.get(
+          `${context.state.server}/api/entities`
+        );
+        if (axiosResponse.status == 200) {
+          results["entities"] = axiosResponse.data;
+        }
+        //sectors
+        axiosResponse = await context.getters.getAuthenticatedAxios.get(
+          `${context.state.server}/api/sectors`
+        );
+        if (axiosResponse.status == 200) {
+          results["sectors"] = axiosResponse.data;
+        }
+        // instruments
+        axiosResponse = await context.getters.getAuthenticatedAxios.get(
+          `${context.state.server}/admin/instruments`
+        );
+        if (axiosResponse.status == 200) {
+          results["instruments"] = axiosResponse.data;
+        }
+        if (results["sectors"] && results["entities"] && results["instruments"]) {
+          context.commit("setBasicAdminData", results);
+        }
+
+      } catch (error) {
+        //    TODO - handle error
+        if (error.response) {
+          // console.log(error.response.data);
         }
       }
     },

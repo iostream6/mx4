@@ -37,34 +37,9 @@
                   <i class="fa fa-angle-down"></i>
                 </div>
               </a>
-              <div class="collapse" id="collapsePages" aria-labelledby="headingTwo" data-parent="#sidenavAccordion">
-                <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages">
-                  <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#pagesCollapseAuth" aria-expanded="false" aria-controls="pagesCollapseAuth">
-                    Users
-                    <div class="sb-sidenav-collapse-arrow">
-                      <i class="fa fa-angle-down"></i>
-                    </div>
-                  </a>
-                  <div class="collapse" id="pagesCollapseAuth" aria-labelledby="headingOne" data-parent="#sidenavAccordionPages">
-                    <nav class="sb-sidenav-menu-nested nav">
-                      <a class="nav-link" href="login.html">Login</a>
-                      <a class="nav-link" href="register.html">Register</a>
-                      <a class="nav-link" href="password.html">Forgot Password</a>
-                    </nav>
-                  </div>
-                  <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#pagesCollapseError" aria-expanded="false" aria-controls="pagesCollapseError">
-                    Error
-                    <div class="sb-sidenav-collapse-arrow">
-                      <i class="fa fa-angle-down"></i>
-                    </div>
-                  </a>
-                  <div class="collapse" id="pagesCollapseError" aria-labelledby="headingOne" data-parent="#sidenavAccordionPages">
-                    <nav class="sb-sidenav-menu-nested nav">
-                      <a class="nav-link" href="401.html">401 Page</a>
-                      <a class="nav-link" href="404.html">404 Page</a>
-                      <a class="nav-link" href="500.html">500 Page</a>
-                    </nav>
-                  </div>
+              <div v-if="isAdminUser" class="collapse" id="collapsePages" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
+                <nav class="sb-sidenav-menu-nested nav">
+                  <a class="nav-link" href="#" v-on:click="activeComponent='entities'">Entities</a>
                 </nav>
               </div>
               <div class="sb-sidenav-menu-heading">Addons</div>
@@ -85,39 +60,48 @@
 
       <!-- THE MAIN AREA CONTENT PLACEHOLDERS - THE CONTENT THAT IS SHOWN DEPENDS ON THE ACTIVE link (captured by The main area content  place holders -->
       <!-- Main area content for Dashboard link -->
-      <dashboard v-show="activeComponent==='dashboard'"/>
-
+      <dashboard v-show="activeComponent==='dashboard'" />
 
       <!-- Main area content for Brokerage link -->
-      <brokerages v-if="activeComponent==='brokerages'"/>
+      <brokerages v-if="activeComponent==='brokerages'" />
 
       <!-- Main area content for Portfolio link -->
-      <portfolios v-if="activeComponent==='portfolios'"/>
+      <portfolios v-if="activeComponent==='portfolios'" />
 
       <!-- Main area content for Transactions link -->
-      <transactions v-if="activeComponent==='transactions'"/>
-      
+      <transactions v-if="activeComponent==='transactions'" />
+
+      <!-- Main area content for Entities link -->
+      <entities v-if="activeComponent==='entities'" />
     </div>
   </div>
 </template>
 
 <script>
-// import { mapState } from "vuex";
+import { mapState } from "vuex";
 
 import AppNavBar from "../components/AppNavBar";
 import Dashboard from "../components/Dashboard";
 import Brokerages from "../components/Brokerages";
 import Portfolios from "../components/Portfolios";
 import Transactions from "../components/Transactions";
+import Entities from "../components/Entities";
 
 export default {
   name: "MainView",
-  components: { AppNavBar, Dashboard, Brokerages, Portfolios, Transactions},
+  components: {
+    AppNavBar,
+    Dashboard,
+    Brokerages,
+    Portfolios,
+    Transactions,
+    Entities
+  },
   data() {
     return { activeComponent: "dashboard" };
   },
   computed: {
-    //...mapState(["httpErrorInfo"])
+    ...mapState(["isAdminUser"])
   }
 };
 </script>
