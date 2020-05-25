@@ -75,15 +75,15 @@ public class CurrencyService {
         //initialize King dollar:
         currency.setCode("USD");
         currency.setSymbol("$");
-        currency.setCurrencyID(1001101);
+        currency.setId(1001101);
         currency.setName("US Dollars");
         currencies.add(currency);
 
         //initilize the US Cents
         currency = new Currency();
-        currency.setCode("USDX");
+        currency.setCode("USX");
         currency.setSymbol("c");
-        currency.setCurrencyID(1001102);
+        currency.setId(1001102);
         currency.setName("US Cents");
         currencies.add(currency);
 
@@ -91,15 +91,15 @@ public class CurrencyService {
         currency = new Currency();
         currency.setCode("GBP");
         currency.setSymbol("£");
-        currency.setCurrencyID(1001103);
+        currency.setId(1001103);
         currency.setName("GB Pounds");
         currencies.add(currency);
 
         //initilize the Queen's Pence
         currency = new Currency();
-        currency.setCode("GBPX");
+        currency.setCode("GBX");
         currency.setSymbol("p");
-        currency.setCurrencyID(1001104);
+        currency.setId(1001104);
         currency.setName("GB Pence");
         currencies.add(currency);
 
@@ -107,15 +107,15 @@ public class CurrencyService {
         currency = new Currency();
         currency.setCode("EUR");
         currency.setSymbol("€");
-        currency.setCurrencyID(1001105);
+        currency.setId(1001105);
         currency.setName("Euros");
         currencies.add(currency);
 
         //initilize the Euro Cents
         currency = new Currency();
-        currency.setCode("EURX");
+        currency.setCode("EUX");
         currency.setSymbol("c");
-        currency.setCurrencyID(1001106);
+        currency.setId(1001106);
         currency.setName("Euro Cents");
         currencies.add(currency);
 

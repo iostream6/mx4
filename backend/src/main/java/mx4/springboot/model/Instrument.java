@@ -17,31 +17,28 @@ public class Instrument {
     /**
      * A long identifier for this instruments currency.
      */
-    private long currencyID;
+    private long currencyId;
 
     /**
      * A string code that represents this instrument. Example : MSFT | USDCASH | etc.
      */
     private String code;
 
-    /**
-     * A long identifier for this instrument.
-     */
-    private long instrumentID;
+    private String id;
 
     /**
-     * A long identifier for the company to which this instrument is associated. A single company can have multiple instruments (e.g. RDSB, RDSA; or listing in NYSE versus another in LSE, etc).
+     * A String identifier for the company to which this instrument is associated. A single company can have multiple instruments (e.g. RDSB, RDSA; or listing in NYSE versus another in LSE, etc).
      */
-    private long companyID;
+    private String entityId;
 
     /**
      * A String description for this instrument.
      */
     private String description;
     
-    private long countryID;
+    private String countryId;
     
-    private long sectorID;
+    private String sectorId;
 
     public Type getType() {
         return type;
@@ -51,13 +48,48 @@ public class Instrument {
         this.type = type;
     }
 
-    public long getCurrencyID() {
-        return currencyID;
+    public String getId() {
+        return id;
     }
 
-    public void setCurrencyID(long currencyID) {
-        this.currencyID = currencyID;
+    public void setId(String id) {
+        this.id = id;
     }
+
+    public long getCurrencyId() {
+        return currencyId;
+    }
+
+    public void setCurrencyId(long currencyId) {
+        this.currencyId = currencyId;
+    }
+
+    public String getEntityId() {
+        return entityId;
+    }
+
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
+    }
+
+    public String getCountryId() {
+        return countryId;
+    }
+
+    public void setCountryId(String countryId) {
+        this.countryId = countryId;
+    }
+
+    public String getSectorId() {
+        return sectorId;
+    }
+
+    public void setSectorId(String sectorId) {
+        this.sectorId = sectorId;
+    }
+
+
+    
 
     public String getCode() {
         return code;
@@ -67,21 +99,6 @@ public class Instrument {
         this.code = code;
     }
 
-    public long getInstrumentID() {
-        return instrumentID;
-    }
-
-    public void setInstrumentID(long instrumentID) {
-        this.instrumentID = instrumentID;
-    }
-
-    public long getCompanyID() {
-        return companyID;
-    }
-
-    public void setCompanyID(long companyID) {
-        this.companyID = companyID;
-    }
 
     public String getDescription() {
         return description;
@@ -89,22 +106,6 @@ public class Instrument {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public long getCountryID() {
-        return countryID;
-    }
-
-    public void setCountryID(long countryID) {
-        this.countryID = countryID;
-    }
-
-    public long getSectorID() {
-        return sectorID;
-    }
-
-    public void setSectorID(long sectorID) {
-        this.sectorID = sectorID;
     }
 
     public static enum Type {

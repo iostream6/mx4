@@ -27,7 +27,7 @@ public class Currency {
     /**
      * A long identifier for this currency
      */
-    private long currencyID;
+    private long id;
 
     public String getSymbol() {
         return symbol;
@@ -53,12 +53,12 @@ public class Currency {
         this.name = name;
     }
 
-    public long getCurrencyID() {
-        return currencyID;
+    public long getId() {
+        return id;
     }
 
-    public void setCurrencyID(long currencyID) {
-        this.currencyID = currencyID;
+    public void setId(long id) {
+        this.id = id;
     }
 
     public static class Exchange {
@@ -112,8 +112,6 @@ public class Currency {
         public void setDatestamp(long datestamp) {
             this.datestamp = datestamp;
         }
-        
-        
 
     }
 

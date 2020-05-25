@@ -50,21 +50,21 @@ public class APIExchangeRateServiceProvider implements ExchangeRateServiceProvid
                         ObjectMapper mapper = new ObjectMapper();
                         FixerExchangeInfo exchangeInfo = mapper.readValue(con.getInputStream(), FixerExchangeInfo.class);
                         if (exchangeInfo.getRates().isEmpty() == false) {
-                            currencies.stream().filter(cc -> /*cc.getCurrencyID() != c.getCurrencyID() &&*/ cc.getCode().length() == 3).forEach(ccc -> {
+                            currencies.stream().filter(cc -> /*cc.getId() != c.getId() &&*/ cc.getCode().length() == 3).forEach(ccc -> {
                                 Double forwardRate = exchangeInfo.getRates().get(ccc.getCode());
                                 if (forwardRate != null) {
                                     Exchange ex = new Exchange();
                                     ex.setDatestamp(exchangeInfo.getTimestamp());
-                                    ex.setFromID(c.getCurrencyID());
-                                    ex.setToID(ccc.getCurrencyID());
+                                    ex.setFromID(c.getId());
+                                    ex.setToID(ccc.getId());
                                     ex.setConverter(forwardRate);
                                     exchanges.add(ex);
                                     //
                                     //fractionals
                                     ex = new Exchange();
                                     ex.setDatestamp(exchangeInfo.getTimestamp());
-                                    ex.setFromID(c.getCurrencyID());
-                                    ex.setToID(ccc.getCurrencyID() + 1);
+                                    ex.setFromID(c.getId());
+                                    ex.setToID(ccc.getId() + 1);
                                     ex.setConverter(100 * forwardRate);
                                     exchanges.add(ex);
                                 }
