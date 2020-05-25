@@ -1,14 +1,21 @@
 /*
  * 2020.04.02 - Created | Base functionality QC'ed
- * 2020.05.01  - Path security QC'd
+ * 2020.05.24 - Implemented Admin CRUD endpoints for Instruments. Add minor improvements to Entity endpoint implementation
  */
 package mx4.springboot.services;
 
 import java.util.List;
 import java.util.Optional;
 import mx4.springboot.model.Entity;
+import mx4.springboot.model.Instrument;
+import mx4.springboot.model.Sector;
 import mx4.springboot.persistence.EntityRepository;
+import mx4.springboot.persistence.InstrumentRepository;
+import mx4.springboot.persistence.SectorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,92 +28,98 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * @author Ilamah, Osho
  */
-//@RequestMapping("/api")
 @RestController
 
 public class EntityService {
 
-    private static final String TYPE = "Entity";
-
     @Autowired
     private EntityRepository entityRepository;
 
+    @Autowired
+    private SectorRepository sectorRepository;
+
+    @Autowired
+    private InstrumentRepository instrumentRepository;
+
     @PostMapping("/admin/entities") //Might also use ResponseEntity return type so we can set location. See Gutierez pp 101 & https://stackoverflow.com/a/51916728
-    public Entity create(@RequestBody Entity e) {
+    public Entity createEntity(@RequestBody Entity e) {
         return entityRepository.save(e);
     }
 
     @GetMapping("/api/entities")
-    public List<Entity> readAll() {
-        return entityRepository.findAll();
+    public List<Entity> readAllEntities() {
+        return entityRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
     }
 
     @GetMapping("/api/entities/{id}")
-    public Entity readOne(@PathVariable String id) {
+    public ResponseEntity<?> readOneEntity(@PathVariable String id) {
         final Optional<Entity> optional = entityRepository.findById(id);
-        return optional.orElseThrow(() -> new ItemNotFoundException(id, TYPE));  //will be caught and customized by (@ControllerAdvice) class ItemNotFoundAdvicer
+        if (optional.isPresent()) {
+            return ResponseEntity.ok(optional.get());
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
     @PutMapping("/admin/entities/{id}")
-    public Entity update(@RequestBody Entity e, @PathVariable String id) {
-        return entityRepository.findById(id).map(entity -> {
+    public ResponseEntity<?> updateEntity(@RequestBody Entity e, @PathVariable String id) {
+        final Optional<Entity> optional = entityRepository.findById(id);
+        if (optional.isPresent()) {
+            final Entity entity = optional.get();
             entity.setName(e.getName());
             entity.setDescription(e.getDescription());
-            return entityRepository.save(entity);
-        }).orElseGet(() -> {
-            e.setId(id);
-            return entityRepository.save(e);
-        });
+            return ResponseEntity.ok(entityRepository.save(entity));
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
     @DeleteMapping("/admin/entities/{id}")
-    public void delete(@PathVariable String id) {
+    public void deleteEntity(@PathVariable String id) {
         entityRepository.deleteById(id);
     }
+//
+// -- Sector objects    
+//    
 
-//    public String welcome() {
-//
-////        entityRepository.deleteAll();
-////
-////        // save a couple of customers
-////
-////        //entityRepository.save(new Entity("Alice", 1));
-////        //entityRepository.save(new Entity("Bob", 2));
-////        
-////        // fetch all customers
-//////        System.out.println("Customers found with findAll():");
-//////        System.out.println("-------------------------------");
-//////        for (Entity e : entityRepository.findAll()) {
-//////            System.out.println(e.getName() + " __" + e.getDescription());
-//////        }
-//////        System.out.println();
-//////
-//        return "<h1><font face='verdana'>Spring Boot Rocks!</font></h1>";
-//
-//    }
-    /**
-     * @Override public void run(String... args) throws Exception {
-     *
-     *
-     *
-     * // save a couple of customers repository.save(new Customer("Alice",
-     * "Smith")); repository.save(new Customer("Bob", "Smith"));
-     *
-     * // fetch all customers System.out.println("Customers found with
-     * findAll():"); System.out.println("-------------------------------"); for
-     * (Customer customer : repository.findAll()) {
-     * System.out.println(customer); } System.out.println();
-     *
-     * // fetch an individual customer System.out.println("Customer found with
-     * findByFirstName('Alice'):");
-     * System.out.println("--------------------------------");
-     * System.out.println(repository.findByFirstName("Alice"));
-     *
-     * System.out.println("Customers found with findByLastName('Smith'):");
-     * System.out.println("--------------------------------"); for (Customer
-     * customer : repository.findByLastName("Smith")) {
-     * System.out.println(customer); }
-     *
-     * }
-     */
+    @GetMapping("/api/sectors")
+    public List<Sector> readSectors() {
+        return sectorRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+    }
+
+// -- Instruments 
+    @PostMapping("/admin/instruments") //Might also use ResponseEntity return type so we can set location. See Gutierez pp 101 & https://stackoverflow.com/a/51916728
+    public ResponseEntity<?> createInstrument(@RequestBody Instrument i) {
+        final List<Instrument> existing = instrumentRepository.findByCode(i.getCode());
+        if (existing.isEmpty()) {
+            return ResponseEntity.ok(instrumentRepository.save(i));
+        }
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+    }
+
+    @GetMapping("/admin/instruments")
+    public List<Instrument> readAllInstruments() {
+        return instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
+    }
+
+    @PutMapping("/admin/instruments/{id}")
+    public ResponseEntity<?> updateInstrument(@RequestBody Instrument i, @PathVariable String id) {
+        final Optional<Instrument> optional = instrumentRepository.findById(id);
+        if (optional.isPresent()) {
+            final Instrument ii = optional.get();
+            ii.setType(i.getType());
+            ii.setCurrencyId(i.getCurrencyId());
+            ii.setCode(i.getCode());
+            ii.setSectorId(i.getSectorId());
+            ii.setEntityId(i.getEntityId());
+            ii.setDescription(i.getDescription());
+            ii.setCountryId(i.getCountryId());
+            return ResponseEntity.ok(instrumentRepository.save(ii));
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
+
+    @DeleteMapping("/admin/instruments/{id}")
+    public void deleteInstrument(@PathVariable String id) {
+        instrumentRepository.deleteById(id);
+    }
+
 }
