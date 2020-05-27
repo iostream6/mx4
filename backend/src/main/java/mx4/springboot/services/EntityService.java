@@ -100,7 +100,7 @@ public class EntityService {
         return instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
     }
 
-    @PutMapping("/admin/instruments/{id}")
+    @PutMapping("/admin/instrument/{id}")
     public ResponseEntity<?> updateInstrument(@RequestBody Instrument i, @PathVariable String id) {
         final Optional<Instrument> optional = instrumentRepository.findById(id);
         if (optional.isPresent()) {
@@ -117,7 +117,7 @@ public class EntityService {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
-    @DeleteMapping("/admin/instruments/{id}")
+    @DeleteMapping("/admin/instrument/{id}")
     public void deleteInstrument(@PathVariable String id) {
         instrumentRepository.deleteById(id);
     }

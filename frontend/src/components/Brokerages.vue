@@ -1,6 +1,7 @@
 <!--  
 ***  2020.05.16  - Created | Broker list capability
 ***  2020.05.17  - Added broker edit/delete capability
+***  2020.05.26  - Updated Modal forms to correctly use footer
 -->
 <template>
   <div id="layoutSidenav_content">
@@ -69,7 +70,7 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="exampleModalLabel">Add New Broker</h5>
+              <h4 class="modal-title" id="exampleModalLabel">Add New Broker</h4>
               <button type="button" class="close" v-on:click="cancelBrokerDialog" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
               </button>
@@ -79,15 +80,21 @@
                 <div class="form-group">
                   <input v-model="newBroker.name" class="form-control form-control-lg" placeholder="Broker name" required minlength="2" autofocus />
                 </div>
-                <div class="form-group">
-                  <button class="btn btn-primary btn-block btn-lg" type="submit">Add</button>
+                <!-- We could trigger the event on this directly but we want footer/validation so we show the footer, hide this
+                and delegate back to this button (submit) to enable inbuilt validation -->
+                <div class="form-group" hidden> 
+                  <button id="addButton" class="btn btn-primary btn-block btn-lg" type="submit">Add</button>
                 </div>
               </form>
             </div>
-            <!--<div class="modal-footer">
-              <button type="button" class="btn btn-secondary" v-on:click="showAddBrokerDialog= false">Close</button>
-              <button type="button" class="btn btn-primary">Save changes</button>
-            </div>-->
+            <div class="modal-footer">
+              <!-- we want to have the nornal footer buttons, the add option in the footer will trigger click
+              event in the actual form submit button. Declaring the footer inside the form will avoid this but will
+              render and a short hr footer
+              -->
+              <button type="button" class="btn btn-secondary" v-on:click="cancelBrokerDialog">Cancel</button>
+              <button type="button" class="btn btn-primary" v-on:click="triggerClickEvent('addButton')">Add</button>
+            </div>
           </div>
         </div>
       </div>
@@ -97,7 +104,7 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="exampleModalLabel">Edit Broker</h5>
+              <h4 class="modal-title" id="exampleModalLabel">Edit Broker</h4>
               <button type="button" class="close" v-on:click="cancelBrokerDialog" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
               </button>
@@ -107,15 +114,21 @@
                 <div class="form-group">
                   <input v-model="safeEditBrokerInfo.broker.name" class="form-control form-control-lg" placeholder="Broker name" required minlength="2" autofocus />
                 </div>
-                <div class="form-group">
-                  <button class="btn btn-primary btn-block btn-lg" type="submit">Save</button>
+                 <!-- We could trigger the event on this directly but we want footer/validation so we show the footer, hide this
+                and delegate back to this button (submit) to enable inbuilt validation -->
+                <div class="form-group" hidden> 
+                  <button id="editButton" class="btn btn-primary btn-block btn-lg" type="submit">Edit</button>
                 </div>
               </form>
             </div>
-            <!--<div class="modal-footer">
-              <button type="button" class="btn btn-secondary" v-on:click="showAddBrokerDialog= false">Close</button>
-              <button type="button" class="btn btn-primary">Save changes</button>
-            </div>-->
+            <div class="modal-footer">
+              <!-- we want to have the nornal footer buttons, the add option in the footer will trigger click
+              event in the actual form submit button. Declaring the footer inside the form will avoid this but will
+              render and a short hr footer
+              -->
+              <button type="button" class="btn btn-secondary" v-on:click="cancelBrokerDialog">Cancel</button>
+              <button type="button" class="btn btn-primary" v-on:click="triggerClickEvent('editButton')">Save</button>
+            </div>
           </div>
         </div>
       </div>
@@ -125,7 +138,7 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="exampleModalLabel">Delete Broker</h5>
+              <h4 class="modal-title" id="exampleModalLabel">Delete Broker</h4>
               <button type="button" class="close" v-on:click="cancelBrokerDialog" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
               </button>
@@ -136,15 +149,15 @@
                   <!--<input v-model="safeEditBrokerInfo.broker.name" class="form-control form-control-lg" readonly required minlength="2" autofocus /> -->
                   <div class="alert alert-danger text-left">This action will delete '{{safeEditBrokerInfo.broker.name}}'</div>
                 </div>
-                <div class="form-group">
-                  <button class="btn btn-primary btn-block btn-lg" type="submit">Delete</button>
+                <div class="form-group" hidden> 
+                  <button id="deleteButton" class="btn btn-primary btn-block btn-lg" type="submit">Delete</button>
                 </div>
               </form>
             </div>
-            <!--<div class="modal-footer">
-              <button type="button" class="btn btn-secondary" v-on:click="showAddBrokerDialog= false">Close</button>
-              <button type="button" class="btn btn-primary">Save changes</button>
-            </div>-->
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" v-on:click="cancelBrokerDialog">Cancel</button>
+              <button type="button" class="btn btn-primary" v-on:click="triggerClickEvent('deleteButton')">Delete</button>
+            </div>
           </div>
         </div>
       </div>
@@ -176,12 +189,7 @@ export default {
     ...mapGetters(["isJWTValid"])
   },
   methods: {
-    ...mapActions([
-      "addBrokerAction",
-      "editBrokerAction",
-      "deleteBrokerAction",
-      "refreshTokenAction"
-    ]),
+    ...mapActions(["addBrokerAction", "editBrokerAction", "deleteBrokerAction", "refreshTokenAction"]),
     ...mapMutations(["clearAuthentication"]),
     //
     //
@@ -195,6 +203,9 @@ export default {
 
       this.safeEditBrokerInfo = { broker: { name: null } };
       this.selectedBrokerIndex = -1;
+    },
+    triggerClickEvent(targetId) {
+      document.getElementById(targetId).click();
     },
     //
     //
@@ -264,8 +275,7 @@ export default {
         this.showEditBrokerDialog = true;
       }
     }
-  },
-
+  }
 };
 </script>
 

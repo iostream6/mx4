@@ -68,7 +68,7 @@ export default new Vuex.Store({
         console.log(`Lamda Local authentication check:: ${currentTime < exp}`);
         return currentTime < exp;
       };
-    },
+    }
   },
   //
   //
@@ -106,7 +106,6 @@ export default new Vuex.Store({
       state.jwt = null;
       state.authenticated = false;
       state.user.username = null;
-      console.log("Cleared Auth state");
     },
     //
     //
@@ -156,6 +155,24 @@ export default new Vuex.Store({
     //
     //
     //
+    setInstrument(state, data) {
+      state.supportedInstruments[data.index].type = data.instrument.type;
+      state.supportedInstruments[data.index].currencyId = data.instrument.currencyId;
+      state.supportedInstruments[data.index].code = data.instrument.code;
+      state.supportedInstruments[data.index].sectorId = data.instrument.sectorId;
+      state.supportedInstruments[data.index].entityId = data.instrument.entityId;
+      state.supportedInstruments[data.index].description = data.instrument.description;
+      state.supportedInstruments[data.index].countryId = data.instrument.countryId;
+    },
+    //
+    //
+    //
+    setRemovedInstrument(state, index) {
+      state.supportedInstruments.splice(index, 1);
+    },
+    //
+    // 
+    //
     setBasicData(state, data) {
       state.currencies = data["currencies"];
       state.brokers = data["brokers"];
@@ -203,18 +220,6 @@ export default new Vuex.Store({
           }
         }
         //OTHER STATES
-      }
-    },
-    //
-    //
-    //
-    /**
-     * 
-     * @param {*} context 
-     */
-    async refreshTokenAction(context) {
-      if (context.state.jwt == null) {
-        console.log("TODO");
       }
     },
     //
@@ -309,7 +314,6 @@ export default new Vuex.Store({
         //   TODO - handle error
       }
     },
-
     //
     //
     //
@@ -377,9 +381,56 @@ export default new Vuex.Store({
           context.commit("setAddedInstrument", requestData);
         }
       } catch (error) {
-        //   TODO - handle error
+        //   TODO - handle error 
       }
     },
+    //
+    //
+    //
+    /**
+     * Sends Axios request to backend API to edit an instrument entry
+     * @param {*} context the required vuex context
+     * @param {*} data a JSON object containing an instrumnet field and an index field representing the index of this instrument on the list
+     */
+    async editInstrumentAction(context, data) {
+      try {
+        const axiosResponse = await context.getters.getAuthenticatedAxios.put(
+          `${context.state.server}/admin/instrument/${data.instrument.id}`, data.instrument
+        );
+        if (axiosResponse.status == 200) {
+          context.commit("setInstrument", data);
+        }
+      } catch (error) {
+        //    TODO - handle error
+        // if (error.response) {
+        //   // console.log(error.response.data);
+        // }
+      }
+    },
+    /**
+     * Sends Axios request to backend API to delete an instrument entry
+     * @param {*} context the required vuex context
+     * @param {*} data a JSON object containing an instrument field and an index field representing the index of this instrument on the list
+     */
+    async deleteInstrumentAction(context, data) {
+      try {
+        const axiosResponse = await context.getters.getAuthenticatedAxios.delete(
+          // HTTP DELETE body not widely supported, etc. 
+          //https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request
+          //https://github.com/axios/axios/issues/897
+          `${context.state.server}/admin/instrument/${data.instrument.id}`
+        );
+        if (axiosResponse.status == 200) {
+          context.commit("setRemovedInstrument", data.index);
+        }
+      } catch (error) {
+        //    TODO - handle error
+        if (error.response) {
+          // console.log(error.response.data);
+        }
+      }
+    },
+
     /**
      * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
      * user as well as supported currencies
@@ -431,10 +482,10 @@ export default new Vuex.Store({
       }
     },
     /**
- * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
- * user as well as supported currencies
- * @param {*} context the required vuex context
- */
+    * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
+    * user as well as supported currencies
+    * @param {*} context the required vuex context
+    */
     async getBasicAdminDataAction(context) {
       try {
         let results = {};
@@ -467,6 +518,30 @@ export default new Vuex.Store({
         //    TODO - handle error
         if (error.response) {
           // console.log(error.response.data);
+        }
+      }
+    },
+    /**
+     * 
+     * @param {*} context 
+     */
+    async ensureAuthorized(context) {
+      const currentDate = new Date();
+      if (!context.getters.isJWTValid(currentDate)) {
+        //todo ATEMPT TO REFRESH TOKEN
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //if after refresh attempt, still not valid? Force signin
+        if (!context.getters.isJWTValid(currentDate)) {
+          context.commit("clearAuthentication");
         }
       }
     },
