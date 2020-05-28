@@ -2,6 +2,7 @@
 ***  2020.05.16  - Created | Broker list capability
 ***  2020.05.17  - Added broker edit/delete capability
 ***  2020.05.26  - Updated Modal forms to correctly use footer
+***  2020.05.27  - Updated to use more compact centralized authorization checks
 -->
 <template>
   <div id="layoutSidenav_content">
@@ -81,8 +82,8 @@
                   <input v-model="newBroker.name" class="form-control form-control-lg" placeholder="Broker name" required minlength="2" autofocus />
                 </div>
                 <!-- We could trigger the event on this directly but we want footer/validation so we show the footer, hide this
-                and delegate back to this button (submit) to enable inbuilt validation -->
-                <div class="form-group" hidden> 
+                and delegate back to this button (submit) to enable inbuilt validation-->
+                <div class="form-group" hidden>
                   <button id="addButton" class="btn btn-primary btn-block btn-lg" type="submit">Add</button>
                 </div>
               </form>
@@ -114,9 +115,9 @@
                 <div class="form-group">
                   <input v-model="safeEditBrokerInfo.broker.name" class="form-control form-control-lg" placeholder="Broker name" required minlength="2" autofocus />
                 </div>
-                 <!-- We could trigger the event on this directly but we want footer/validation so we show the footer, hide this
-                and delegate back to this button (submit) to enable inbuilt validation -->
-                <div class="form-group" hidden> 
+                <!-- We could trigger the event on this directly but we want footer/validation so we show the footer, hide this
+                and delegate back to this button (submit) to enable inbuilt validation-->
+                <div class="form-group" hidden>
                   <button id="editButton" class="btn btn-primary btn-block btn-lg" type="submit">Edit</button>
                 </div>
               </form>
@@ -149,7 +150,7 @@
                   <!--<input v-model="safeEditBrokerInfo.broker.name" class="form-control form-control-lg" readonly required minlength="2" autofocus /> -->
                   <div class="alert alert-danger text-left">This action will delete '{{safeEditBrokerInfo.broker.name}}'</div>
                 </div>
-                <div class="form-group" hidden> 
+                <div class="form-group" hidden>
                   <button id="deleteButton" class="btn btn-primary btn-block btn-lg" type="submit">Delete</button>
                 </div>
               </form>
@@ -166,7 +167,7 @@
 </template>
 
 <script>
-import { mapState, mapActions, mapGetters, mapMutations } from "vuex";
+import { mapState, mapActions } from "vuex";
 
 export default {
   name: "Brokerages",
@@ -184,13 +185,10 @@ export default {
     };
   },
   computed: {
-    ...mapState(["user", "brokers"]),
-    // isJWTValid returns a function so even though computed, it is not cached
-    ...mapGetters(["isJWTValid"])
+    ...mapState(["user", "brokers", "authenticated"])
   },
   methods: {
-    ...mapActions(["addBrokerAction", "editBrokerAction", "deleteBrokerAction", "refreshTokenAction"]),
-    ...mapMutations(["clearAuthentication"]),
+    ...mapActions(["addBrokerAction", "editBrokerAction", "deleteBrokerAction", "ensureAuthorized"]),
     //
     //
     //
@@ -212,45 +210,36 @@ export default {
     //
     async addBroker() {
       //e.preventDefault() - already blocked with modifier
-
-      if (!this.isJWTValid(new Date())) {
-        this.refreshTokenAction();
-        //if after refresh attempt, still not valid? Force signin
-        if (!this.isJWTValid(new Date())) {
-          this.cancelBrokerDialog();
-          this.clearAuthentication();
-          this.$router.push("/");
-          return;
-        }
+      this.ensureAuthorized(); //will updated authenticated state
+      if (this.authenticated == true) {
+        const data = {
+          name: this.newBroker.name,
+          userId: this.user.userId
+        };
+        this.addBrokerAction(data);
+        this.cancelBrokerDialog();
+      } else {
+        this.cancelDialog();
+        this.$router.push("/");
       }
-      const data = {
-        name: this.newBroker.name,
-        userId: this.user.userId
-      };
-      this.addBrokerAction(data);
-      this.cancelBrokerDialog();
     },
     //
     //
     //
     async editBroker(isDelete) {
-      if (!this.isJWTValid(new Date())) {
-        this.refreshTokenAction();
-        //if after refresh attempt, still not valid? Force signin
-        if (!this.isJWTValid(new Date())) {
-          this.cancelBrokerDialog();
-          this.clearAuthentication();
-          this.$router.push("/");
-          return;
+      // //e.preventDefault() - already blocked with modifier
+      this.ensureAuthorized(); //will updated authenticated state
+      if (this.authenticated == true) {
+        if (isDelete) {
+          this.deleteBrokerAction(this.safeEditBrokerInfo);
+        } else {
+          this.editBrokerAction(this.safeEditBrokerInfo);
         }
-      }
-
-      if (isDelete) {
-        this.deleteBrokerAction(this.safeEditBrokerInfo);
+        this.cancelBrokerDialog();
       } else {
-        this.editBrokerAction(this.safeEditBrokerInfo);
+        this.cancelDialog();
+        this.$router.push("/");
       }
-      this.cancelBrokerDialog();
     },
     //
     //

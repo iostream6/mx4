@@ -46,8 +46,8 @@
                     <td>{{i.code}}</td>
                     <td class="text-left">{{i.description}}</td>
                     <td>{{i.type}}</td>
-                    <td>{{currencies[currencies.findIndex(item => item.id == i.currencyId)].code}}</td>
-                    <td class="text-left">{{sectors[sectors.findIndex(item => item.id == i.sectorId )].name}}</td>
+                    <td>{{currencies.find(item => item.id == i.currencyId).code}}</td>
+                    <td class="text-left">{{sectors.find(item => item.id == i.sectorId ).name}}</td>
                     <td>
                       <a href="#" class="text-success" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(false)">
                         <i class="fa fa-edit"></i>
@@ -124,12 +124,20 @@
                     <option v-for="(sector, index) in sectors" v-bind:key="index" v-bind:value="index">{{sector.name}}</option>
                   </select>
                 </div>
-                <!-- Note that footer inside modal body Unlike in Brokerages component the hr here is shorter, but still okay-->
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" v-on:click="cancelDialog">Cancel</button>
-                  <button type="submit" class="btn btn-primary">Save</button>
+                <!-- We could trigger the event on this directly but we want footer/validation so we show the footer, hide this
+                and delegate back to this button (submit) to enable inbuilt validation-->
+                <div class="form-group" hidden>
+                  <button id="addButton" class="btn btn-primary btn-block btn-lg" type="submit">Edit</button>
                 </div>
               </form>
+            </div>
+            <div class="modal-footer">
+              <!-- we want to have the nornal footer buttons, the add option in the footer will trigger click
+              event in the actual form submit button. Declaring the footer inside the form will avoid this but will
+              render and a short hr footer
+              -->
+              <button type="button" class="btn btn-secondary" v-on:click="cancelDialog">Cancel</button>
+              <button type="button" class="btn btn-primary" v-on:click="triggerClickEvent('addButton')">Save</button>
             </div>
           </div>
         </div>
@@ -223,7 +231,6 @@
             <div class="modal-body p-4">
               <form v-on:submit.prevent="edit(true)">
                 <div class="form-group">
-                  <!--<input v-model="safeEditBrokerInfo.broker.name" class="form-control form-control-lg" readonly required minlength="2" autofocus /> -->
                   <div class="alert alert-danger text-left">This action will delete '{{safeEditInfo.instrument.description}}'</div>
                 </div>
                 <div class="form-group" hidden>

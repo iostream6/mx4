@@ -59,7 +59,7 @@ public class PortfolioService {
                 portfolioUserRepository.save(pu);
                 users.add(pu);
                 p.setUsers(users);
-            }else{
+            } else {
                 users.stream().forEachOrdered((pu) -> {
                     portfolioUserRepository.save(pu);//will update the ids
                 });
@@ -84,7 +84,7 @@ public class PortfolioService {
             final Optional<Portfolio> portfolioOptional = portfolioRepository.findById(portfolioUser.getPortfolioID());
             if (portfolioOptional.isPresent()) {
                 final Portfolio p = portfolioOptional.get();
-                final PortfolioViewModel pvm = new PortfolioViewModel();               
+                final PortfolioViewModel pvm = new PortfolioViewModel();
                 pvm.setId(p.getId());
                 pvm.setBrokerId(p.getBrokerId());
                 pvm.setCode(p.getCode());
@@ -98,16 +98,17 @@ public class PortfolioService {
 
     /**
      * Update basic attributes of an existing portfolio (e.g. name, code BUT NOT users,transactions, etc.).
+     *
      * @param p the portfolio data model
      * @param uid the requesting user's userId
-     * @return  the updated portfolio model if successful, else an appropriate HTTP response conveying more info to the calling client.
+     * @return the updated portfolio model if successful, else an appropriate HTTP response conveying more info to the calling client.
      */
     @PutMapping("/api/portfolio/{uid}")
     public ResponseEntity<?> update(@RequestBody PortfolioViewModel p, @PathVariable String uid) {
         final Optional<PortfolioUser> portfolioUserOptional = portfolioUserRepository.findByUserIdAndPortfolioID(uid, p.getId());
         if (portfolioUserOptional.isPresent()) {
             if (portfolioUserOptional.get().isWrite()) {
-                portfolioRepository.save(((Portfolio) p));               
+                portfolioRepository.save(((Portfolio) p));
                 return ResponseEntity.ok().build();
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
@@ -149,7 +150,6 @@ public class PortfolioService {
 //        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 //
 //    }
-
 //    //
 //    //
 //    //

@@ -145,6 +145,7 @@ export default new Vuex.Store({
     setPortfolio(state, data) {
       state.portfolios[data.index].name = data.portfolio.name;
       state.portfolios[data.index].code = data.portfolio.code;
+      state.portfolios[data.index].brokerId = data.portfolio.brokerId;
     },
     //
     //
@@ -451,15 +452,6 @@ export default new Vuex.Store({
           `${context.state.server}/api/portfolios/${context.state.user.userId}`
         );
         if (axiosResponse.status == 200) {
-          //map broker ids to friendly broker names
-          let dataIndex = 0, brokerIndex;
-          for (; dataIndex < axiosResponse.data.length; dataIndex++) {
-            for (brokerIndex = 0; brokerIndex < results["brokers"].length; brokerIndex++) {
-              if (results["brokers"][brokerIndex].id == axiosResponse.data[dataIndex].brokerId) {
-                axiosResponse.data[dataIndex]['brokerName'] = results["brokers"][brokerIndex].name;
-              }
-            }
-          }
           results["portfolios"] = axiosResponse.data;
         }
         // currencies
