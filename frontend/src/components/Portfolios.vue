@@ -2,6 +2,7 @@
 ***  2020.05.20  - Created 
 ***  2020.05.27  - Updated to use more compact centralized authorization checks
 ***  2020.05.28  - Improved implementation (based on Entities.vue), removing need for extra  attribute mapping fields
+***  2020.05.30  - Use FA 5.0  and simplified/centralised add/edit/delete actions for domain objects
 -->
 <template>
   <div id="layoutSidenav_content">
@@ -15,8 +16,7 @@
             </div>
             <div class="col-lg-3">
               <button class="btn btn-primary float-right" v-on:click="showAddDialog=true">
-                <i class="fa fa-plus-square"></i>
-                &nbsp;&nbsp; Add New
+                <font-awesome-icon :icon="['fas', 'plus-square']" />&nbsp;&nbsp; Add New
               </button>
             </div>
           </div>
@@ -45,11 +45,11 @@
                     <td class="text-left">{{brokers.find(item => item.id == ptfl.brokerId).name}}</td>
                     <td>
                       <a href="#" class="text-success" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(false)">
-                        <i class="fa fa-edit"></i>
-                      </a> &nbsp;| &nbsp;
+                        <font-awesome-icon :icon="['fas', 'edit']" />
+                      </a> &nbsp; &nbsp; &nbsp; &nbsp;
                       <!-- Call a function that first makes a safe copy before it launches the dialog-->
                       <a href="#" class="text-danger" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(true)">
-                        <i class="fa fa-trash"></i>
+                        <font-awesome-icon :icon="['fas', 'trash-alt']" />
                       </a>
                     </td>
                   </tr>
@@ -116,11 +116,11 @@
               <form v-on:submit.prevent="edit(false)">
                 <div class="form-group text-left">
                   <label for="inputPortfolioCode">Portfolio code:</label>
-                  <input id="inputPortfolioCode" v-model="safeEditInfo.portfolio.code" class="form-control form-control-lg" required minlength="2" autofocus />
+                  <input id="inputPortfolioCode" v-model="safeEditInfo.data.code" class="form-control form-control-lg" required minlength="2" autofocus />
                 </div>
                 <div class="form-group text-left">
                   <label for="inputPortfolioName">Portfolio name:</label>
-                  <input id="inputPortfolioName" v-model="safeEditInfo.portfolio.name" class="form-control form-control-lg" required minlength="2" autofocus />
+                  <input id="inputPortfolioName" v-model="safeEditInfo.data.name" class="form-control form-control-lg" required minlength="2" autofocus />
                 </div>
                 <div class="form-group text-left">
                   <label for="inputPortfolioBroker">Broker:</label>
@@ -152,18 +152,13 @@
               </button>
             </div>
             <div class="modal-body p-4">
-              <form v-on:submit.prevent="edit(true)">
-                <div class="form-group">
-                  <div class="alert alert-danger text-left">This action will delete '{{safeEditInfo.portfolio.name}}'</div>
-                </div>
-                <div class="form-group" hidden>
-                  <button id="portfolioDeleteButton" class="btn btn-primary btn-block btn-lg" type="submit">Save</button>
-                </div>
-              </form>
+              <div class="form-group">
+                <div class="alert alert-danger text-left">This action will delete '{{safeEditInfo.data.name}}'</div>
+              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" v-on:click="cancelDialog">Cancel</button>
-              <button type="button" class="btn btn-primary" v-on:click="triggerClickEvent('portfolioDeleteButton')">Delete</button>
+              <button type="button" class="btn btn-primary" v-on:click="edit(true)">Delete</button>
             </div>
           </div>
         </div>
@@ -203,9 +198,9 @@ export default {
     //
     ...mapActions({
       refreshTokenAction: "refreshTokenAction",
-      addAction: "addPortfolioAction",
-      editAction: "editPortfolioAction",
-      deleteAction: "deletePortfolioAction",
+      addAction: "addAction",
+      editAction: "editAction",
+      deleteAction: "deleteAction",
       ensureAuthorized: "ensureAuthorized"
     }),
     //
@@ -230,7 +225,7 @@ export default {
       // b) Ensure that if a user cancels the edit mid-way, we don't have to worry about restoring a bound object
       const selectedPortfolio = this.portfolios[this.selectedIndex];
       this.safeEditInfo = {
-        portfolio: {
+        data: {
           id: selectedPortfolio.id,
           name: selectedPortfolio.name,
           code: selectedPortfolio.code
@@ -240,7 +235,9 @@ export default {
           // brokerId: selectedPortfolio.brokerId,
         },
         brokerIndex: this.brokers.findIndex(item => item.id == selectedPortfolio.brokerId),
-        index: this.selectedIndex
+        index: this.selectedIndex,
+        //url: set later
+        list: "portfolios"
       };
       if (isDelete) {
         this.showDeleteDialog = true;
@@ -256,12 +253,17 @@ export default {
 
       this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
-        const data = {
-          name: this.newPortfolio.name,
-          code: this.newPortfolio.code,
-          brokerId: this.brokers[this.newPortfolio.brokerIndex].id
+        const requestInfo = {
+          data: {
+            name: this.newPortfolio.name,
+            code: this.newPortfolio.code,
+            brokerId: this.brokers[this.newPortfolio.brokerIndex].id
+          },
+          url: `/api/portfolios/${this.user.userId}`,
+          list: "portfolios"
         };
-        this.addAction(data);
+
+        this.addAction(requestInfo);
         this.cancelDialog();
       } else {
         this.cancelDialog();
@@ -275,10 +277,12 @@ export default {
       this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         //map ui selections to persistence model attributes
-        this.safeEditInfo.portfolio.brokerId = this.brokers[this.safeEditInfo.brokerIndex].id;
+        this.safeEditInfo.data.brokerId = this.brokers[this.safeEditInfo.brokerIndex].id;
         if (isDelete) {
+          this.safeEditInfo.url = `/api/portfolio/${this.user.userId}/${this.safeEditInfo.data.id}`;
           this.deleteAction(this.safeEditInfo);
         } else {
+          this.safeEditInfo.url = `/api/portfolio/${this.user.userId}`;
           this.editAction(this.safeEditInfo);
         }
         this.cancelDialog();

@@ -1,3 +1,7 @@
+<!--  
+***  2020.05.30  - Use FA 5.0
+-->
+
 <template>
   <div class="sb-nav-fixed">
     <app-nav-bar />
@@ -10,16 +14,15 @@
               <div class="sb-sidenav-menu-heading">Core</div>
               <a class="nav-link" href="#" v-on:click="activeComponent='dashboard'">
                 <div class="sb-nav-link-icon">
-                  <i class="fa fa-tachometer"></i>
+                  <font-awesome-icon :icon="['fas', 'tachometer-alt']" />
                 </div>Dashboard
               </a>
-
               <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLayouts" aria-expanded="false" aria-controls="collapseLayouts">
                 <div class="sb-nav-link-icon">
-                  <i class="fa fa-columns"></i>
+                  <font-awesome-icon :icon="['fas', 'columns']" />
                 </div>Management
                 <div class="sb-sidenav-collapse-arrow">
-                  <i class="fa fa-angle-down"></i>
+                  <font-awesome-icon :icon="['fas', 'angle-down']" />
                 </div>
               </a>
               <div class="collapse" id="collapseLayouts" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
@@ -31,10 +34,10 @@
               </div>
               <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="false" aria-controls="collapsePages">
                 <div class="sb-nav-link-icon">
-                  <i class="fa fa-book-open"></i>
+                  <font-awesome-icon :icon="['fas', 'book-open']" />
                 </div>Admin
                 <div class="sb-sidenav-collapse-arrow">
-                  <i class="fa fa-angle-down"></i>
+                  <font-awesome-icon :icon="['fas', 'angle-down']" />
                 </div>
               </a>
               <div v-if="isAdminUser" class="collapse" id="collapsePages" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
@@ -45,12 +48,12 @@
               <div class="sb-sidenav-menu-heading">Addons</div>
               <a class="nav-link" href="charts.html">
                 <div class="sb-nav-link-icon">
-                  <i class="fa fa-chart-area"></i>
+                  <font-awesome-icon :icon="['fas', 'chart-area']" />
                 </div>Charts
               </a>
               <a class="nav-link" href="tables.html">
                 <div class="sb-nav-link-icon">
-                  <i class="fa fa-table"></i>
+                  <font-awesome-icon :icon="['fas', 'table']" />
                 </div>Tables
               </a>
             </div>

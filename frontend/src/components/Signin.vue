@@ -1,3 +1,7 @@
+<!--  
+***  2020.05.30  - Use FA 5.0
+-->
+
 <template>
   <div>
     <div>
@@ -18,13 +22,13 @@
               <div class="invalid-feedback">{{response['password-error']}}</div>
             </div>
             <button class="btn btn-primary btn-block" type="submit">
-              <i class="fa fa-sign-in"></i> Sign in
+              <font-awesome-icon :icon="['fas', 'sign-in-alt']" /> Sign in
             </button>
             <a href="#" v-on:click.capture="formname='reset'">Forgot password?</a>
             <hr />
             <!-- <p>Don't have an account!</p>  -->
             <button class="btn btn-primary btn-block" type="button" v-on:click="formname='signup'">
-              <i class="fa fa-user-plus"></i> Sign up New Account
+              <font-awesome-icon :icon="['fas', 'user-plus']" /> Sign up New Account
             </button>
           </form>
         </div>
@@ -37,7 +41,7 @@
             </div>
             <button class="btn btn-primary btn-block" type="submit">Reset Password</button>
             <a href="#" v-on:click="formname='signin'">
-              <i class="fa fa-angle-left"></i> Back
+              <font-awesome-icon :icon="['fas', 'angle-left']" /> Back
             </a>
           </form>
         </div>
@@ -73,10 +77,10 @@
             </div>
             <hr />
             <button class="btn btn-primary btn-block" type="submit">
-              <i class="fa fa-user-plus"></i> Sign Up
+              <font-awesome-icon :icon="['fas', 'user-plus']" /> Sign Up
             </button>
             <a href="#" v-on:click="formname='signin'">
-              <i class="fa fa-angle-left"></i> Back
+              <font-awesome-icon :icon="['fas', 'angle-left']" /> Back
             </a>
           </form>
         </div>

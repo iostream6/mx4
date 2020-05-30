@@ -1,5 +1,6 @@
 /**
  * 2020.05.23  - Added support for authetication persistence, portfolio CRUD
+ * 2020.05.30  - Simplified/centralised add/edit/delete actions for domain objects
  */
 
 import Vue from 'vue'
@@ -27,11 +28,13 @@ export default new Vuex.Store({
     brokers: [],
     portfolios: [],
     currencies: [],
+    transactions: [],
     isBasicDataGotten: false,
     isBasicAdminDataGotten: false,
     isTransactionsGotten: false,
     isAdminUser: false,
     authenticated: false,
+    transactionTypes: ['DIV', 'BUY', 'SELL'],
     instrumentTypes: ["STOCK", "CASH", "BOND", "DEBT"],
     instrumentDomiciles: [{ "code": "USA", "name": "United States" },
     { "code": "UK", "name": "United Kingdom" },
@@ -101,7 +104,6 @@ export default new Vuex.Store({
     },
     //
     //
-    //
     clearAuthentication(state) {
       state.jwt = null;
       state.authenticated = false;
@@ -109,78 +111,32 @@ export default new Vuex.Store({
     },
     //
     //
-    //
-    setAddedBroker(state, data) {
-      state.brokers.push(data);
+    setAddedObject(state, objectInfo) {
+      state[objectInfo.list].push(objectInfo.data);
     },
     //
     //
-    //
-    setRemovedBroker(state, index) {
-      state.brokers.splice(index, 1);
+    setEditedObject(state, objectInfo) {
+      const item = state[objectInfo.list][objectInfo.index];
+      // todo use spreader
+      var x;
+      for (x in objectInfo.data) {
+        item[x] = objectInfo.data[x];
+      }
     },
     //
     //
-    //
-    setBroker(state, data) {
-      state.brokers[data.index].name = data.broker.name;
-      //state.brokers[data.index].id = data.broker.id;
-      //state.brokers[data.index].userId = data.broker.userId;
-    },
-    //
-    //
-    //
-    setAddedPortfolio(state, data) {
-      state.portfolios.push(data);
-    },
-    //
-    //
-    //
-    setRemovedPortfolio(state, index) {
-      state.portfolios.splice(index, 1);
-    },
-    //
-    //
-    //
-    setPortfolio(state, data) {
-      state.portfolios[data.index].name = data.portfolio.name;
-      state.portfolios[data.index].code = data.portfolio.code;
-      state.portfolios[data.index].brokerId = data.portfolio.brokerId;
-    },
-    //
-    //
-    //
-    setAddedInstrument(state, data) {
-      state.supportedInstruments.push(data);
-    },
-    //
-    //
-    //
-    setInstrument(state, data) {
-      state.supportedInstruments[data.index].type = data.instrument.type;
-      state.supportedInstruments[data.index].currencyId = data.instrument.currencyId;
-      state.supportedInstruments[data.index].code = data.instrument.code;
-      state.supportedInstruments[data.index].sectorId = data.instrument.sectorId;
-      state.supportedInstruments[data.index].entityId = data.instrument.entityId;
-      state.supportedInstruments[data.index].description = data.instrument.description;
-      state.supportedInstruments[data.index].countryId = data.instrument.countryId;
-    },
-    //
-    //
-    //
-    setRemovedInstrument(state, index) {
-      state.supportedInstruments.splice(index, 1);
+    setRemovedObject(state, objectInfo) {
+      state[objectInfo.list].splice(objectInfo.index, 1);
     },
     //
     // 
-    //
     setBasicData(state, data) {
       state.currencies = data["currencies"];
       state.brokers = data["brokers"];
       state.portfolios = data["portfolios"];
       state.isBasicDataGotten = true;
     },
-    //
     //
     //
     setBasicAdminData(state, data) {
@@ -227,159 +183,18 @@ export default new Vuex.Store({
     //
     //
     /**
-     * Sends Axios request to backend API to create a new broker entry
+     * Sends Axios request to backend API to create a new domain object entry
      * @param {*} context the required vuex context
-     * @param {*} brokerInfo a JSON object containing broker name and requesting user's userId
+     * @param {*} requestInfo a JSON object containing domain object infomation (ex id), the create URL and the state list name for mutation
      */
-    async addBrokerAction(context, brokerJSON) {
+    async addAction(context, requestInfo) {
       try {
         const axiosResponse = await context.getters.getAuthenticatedAxios.post(
-          `${context.state.server}/api/brokers`, brokerJSON
+          `${context.state.server}${requestInfo.url}`, requestInfo.data
         );
         if (axiosResponse.status == 200) {
-          brokerJSON['id'] = axiosResponse.data["id"];
-          context.commit("setAddedBroker", brokerJSON);
-        }
-      } catch (error) {
-        //   TODO - handle error
-      }
-    },
-    //
-    //
-    //
-    /**
-     * Sends Axios request to backend API to edit a broker entry
-     * @param {*} context the required vuex context
-     * @param {*} brokerInfo a JSON object containing a broker field and an index field representing the index of this broker on the list
-     */
-    async editBrokerAction(context, brokerInfo) {
-      try {
-        const axiosResponse = await context.getters.getAuthenticatedAxios.put(
-          `${context.state.server}/api/broker/${context.state.user.userId}`, brokerInfo.broker
-        );
-        if (axiosResponse.status == 200) {
-          context.commit("setBroker", brokerInfo);
-        }
-      } catch (error) {
-        //    TODO - handle error
-        if (error.response) {
-          // console.log(error.response.data);
-        }
-      }
-    },
-    //
-    //
-    //
-    /**
-     * Sends Axios request to backend API to delete a broker entry
-     * @param {*} context the required vuex context
-     * @param {*} brokerInfo a JSON object containing a broker field and an index field representing the index of this broker on the list
-     */
-    async deleteBrokerAction(context, brokerInfo) {
-      try {
-        const axiosResponse = await context.getters.getAuthenticatedAxios.delete(
-          // HTTP DELETE body not widely supported, etc. 
-          //https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request
-          //https://github.com/axios/axios/issues/897
-          `${context.state.server}/api/broker/${context.state.user.userId}/${brokerInfo.broker.id}`
-        );
-        if (axiosResponse.status == 200) {
-          context.commit("setRemovedBroker", brokerInfo.index);
-        }
-      } catch (error) {
-        //    TODO - handle error
-        if (error.response) {
-          // console.log(error.response.data);
-        }
-      }
-    },
-    //
-    //
-    //
-    /**
-     * Sends Axios request to backend API to create a new portfolio entry
-     * @param {*} context the required vuex context
-     * @param {*} requestData a JSON object containing broker info (ex id)
-     */
-    async addPortfolioAction(context, requestData) {
-      try {
-        const axiosResponse = await context.getters.getAuthenticatedAxios.post(
-          `${context.state.server}/api/portfolios/${context.state.user.userId}`, requestData
-        );
-        if (axiosResponse.status == 200) {
-          requestData['id'] = axiosResponse.data["id"];
-          requestData['users'] = axiosResponse.data["users"]
-          context.commit("setAddedPortfolio", requestData);
-        }
-      } catch (error) {
-        //   TODO - handle error
-      }
-    },
-    //
-    //
-    //
-    /**
-     * Sends Axios request to backend API to edit a portfolio entry
-     * @param {*} context the required vuex context
-     * @param {*} data a JSON object containing a portfolio field and an index field representing the index of this portfolio on the list
-     */
-    async editPortfolioAction(context, data) {
-      try {
-        const axiosResponse = await context.getters.getAuthenticatedAxios.put(
-          `${context.state.server}/api/portfolio/${context.state.user.userId}`, data.portfolio
-        );
-        if (axiosResponse.status == 200) {
-          context.commit("setPortfolio", data);
-        }
-      } catch (error) {
-        //    TODO - handle error
-        if (error.response) {
-          // console.log(error.response.data);
-        }
-      }
-    },
-    //
-    //
-    //
-    /**
-     * Sends Axios request to backend API to delete a portfolio entry
-     * @param {*} context the required vuex context
-     * @param {*} data a JSON object containing a portfolio field and an index field representing the index of this portfolio on the list
-     */
-    async deletePortfolioAction(context, data) {
-      try {
-        const axiosResponse = await context.getters.getAuthenticatedAxios.delete(
-          // HTTP DELETE body not widely supported, etc. 
-          //https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request
-          //https://github.com/axios/axios/issues/897
-          `${context.state.server}/api/portfolio/${context.state.user.userId}/${data.portfolio.id}`
-        );
-        if (axiosResponse.status == 200) {
-          context.commit("setRemovedPortfolio", data.index);
-        }
-      } catch (error) {
-        //    TODO - handle error
-        if (error.response) {
-          // console.log(error.response.data);
-        }
-      }
-    },
-    //
-    //
-    //
-    /**
-     * Sends Axios request to backend API to create a new instrument entry
-     * @param {*} context the required vuex context
-     * @param {*} requestData a JSON object containing instruments infomation (ex id)
-     */
-    async addInstrumentAction(context, requestData) {
-      try {
-        const axiosResponse = await context.getters.getAuthenticatedAxios.post(
-          `${context.state.server}/admin/instruments`, requestData
-        );
-        if (axiosResponse.status == 200) {
-          requestData['id'] = axiosResponse.data["id"];
-          context.commit("setAddedInstrument", requestData);
+          requestInfo.data = axiosResponse.data;// the server add id field, and may append others as well (e.g. PortfolioUsers) 
+          context.commit("setAddedObject", requestInfo);
         }
       } catch (error) {
         //   TODO - handle error 
@@ -389,40 +204,17 @@ export default new Vuex.Store({
     //
     //
     /**
-     * Sends Axios request to backend API to edit an instrument entry
+     * Sends Axios request to backend API to edit an existing domain object
      * @param {*} context the required vuex context
-     * @param {*} data a JSON object containing an instrumnet field and an index field representing the index of this instrument on the list
+     * @param {*} requestInfo a JSON object containing domain object infomation, the state list name for mutation and an index field representing the index on the list
      */
-    async editInstrumentAction(context, data) {
+    async editAction(context, requestInfo) {
       try {
         const axiosResponse = await context.getters.getAuthenticatedAxios.put(
-          `${context.state.server}/admin/instrument/${data.instrument.id}`, data.instrument
+          `${context.state.server}${requestInfo.url}`, requestInfo.data
         );
         if (axiosResponse.status == 200) {
-          context.commit("setInstrument", data);
-        }
-      } catch (error) {
-        //    TODO - handle error
-        // if (error.response) {
-        //   // console.log(error.response.data);
-        // }
-      }
-    },
-    /**
-     * Sends Axios request to backend API to delete an instrument entry
-     * @param {*} context the required vuex context
-     * @param {*} data a JSON object containing an instrument field and an index field representing the index of this instrument on the list
-     */
-    async deleteInstrumentAction(context, data) {
-      try {
-        const axiosResponse = await context.getters.getAuthenticatedAxios.delete(
-          // HTTP DELETE body not widely supported, etc. 
-          //https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request
-          //https://github.com/axios/axios/issues/897
-          `${context.state.server}/admin/instrument/${data.instrument.id}`
-        );
-        if (axiosResponse.status == 200) {
-          context.commit("setRemovedInstrument", data.index);
+          context.commit("setEditedObject", requestInfo);
         }
       } catch (error) {
         //    TODO - handle error
@@ -431,6 +223,31 @@ export default new Vuex.Store({
         }
       }
     },
+    //
+    //
+    //
+    /**
+     * Sends Axios request to backend API to delete an existing domain object
+     * @param {*} context the required vuex context
+     * @param {*} brokerInfo a JSON object containing the domain object infomation, the state list name for mutation and an index field representing the index on the list
+     */
+    async deleteAction(context, requestInfo) {
+      try {
+        const axiosResponse = await context.getters.getAuthenticatedAxios.delete(
+          // HTTP DELETE body not widely supported, etc. see //https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request and https://github.com/axios/axios/issues/897
+          `${context.state.server}${requestInfo.url}`
+        );
+        if (axiosResponse.status == 200) {
+          context.commit("setRemovedObject", requestInfo);
+        }
+      } catch (error) {
+        //    TODO - handle error
+        if (error.response) {
+          // console.log(error.response.data);
+        }
+      }
+    },
+
 
     /**
      * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
@@ -521,10 +338,6 @@ export default new Vuex.Store({
       const currentDate = new Date();
       if (!context.getters.isJWTValid(currentDate)) {
         //todo ATEMPT TO REFRESH TOKEN
-        //
-        //
-        //
-        //
         //
         //
         //

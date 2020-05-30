@@ -1,3 +1,7 @@
+<!--  
+***  Please updated in line with Entities.vue - remove JWT things, etc
+-->
+
 <template>
   <div id="layoutSidenav_content">
     <main>

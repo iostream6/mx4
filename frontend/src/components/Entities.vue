@@ -1,6 +1,7 @@
 <!--  
 ***  2020.05.24  - Created 
 ***  2020.05.27  - Implemented 
+***  2020.05.30  - Use FA 5.0  and simplified/centralised add/edit/delete actions for domain objects
 -->
 <template>
   <div id="layoutSidenav_content">
@@ -14,8 +15,7 @@
             </div>
             <div class="col-lg-3">
               <button class="btn btn-primary float-right" v-on:click="showAddDialog=true">
-                <i class="fa fa-plus-square"></i>
-                &nbsp;&nbsp; Add New
+                <font-awesome-icon :icon="['fas', 'plus-square']" />&nbsp;&nbsp; Add New
               </button>
             </div>
           </div>
@@ -50,11 +50,11 @@
                     <td class="text-left">{{sectors.find(item => item.id == i.sectorId ).name}}</td>
                     <td>
                       <a href="#" class="text-success" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(false)">
-                        <i class="fa fa-edit"></i>
-                      </a> &nbsp;| &nbsp;
+                        <font-awesome-icon :icon="['fas', 'edit']" />
+                      </a> &nbsp; &nbsp; &nbsp; &nbsp;
                       <!-- Call a function that first makes a safe copy before it launches the dialog-->
                       <a href="#" class="text-danger" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(true)">
-                        <i class="fa fa-trash"></i>
+                        <font-awesome-icon :icon="['fas', 'trash-alt']" />
                       </a>
                     </td>
                   </tr>
@@ -163,12 +163,12 @@
                 </div>
                 <div class="form-group text-left">
                   <label for="inputDescription">Description:</label>
-                  <input id="inputDescription" v-model="safeEditInfo.instrument.description" class="form-control" required minlength="2" autofocus />
+                  <input id="inputDescription" v-model="safeEditInfo.data.description" class="form-control" required minlength="2" autofocus />
                 </div>
                 <div class="row">
                   <div class="form-group col-md-6 text-left">
                     <label for="inputType">Type:</label>
-                    <select id="inputType" class="form-control" v-model="safeEditInfo.instrument.type" required>
+                    <select id="inputType" class="form-control" v-model="safeEditInfo.data.type" required>
                       <option v-for="(typ, index) in instrumentTypes" v-bind:key="index" v-bind:value="typ">{{typ}}</option>
                     </select>
                   </div>
@@ -182,7 +182,7 @@
                 <div class="row">
                   <div class="form-group col-md-6 text-left">
                     <label for="inputCode">Code:</label>
-                    <input id="inputCode" v-model="safeEditInfo.instrument.code" class="form-control" required autofocus />
+                    <input id="inputCode" v-model="safeEditInfo.data.code" class="form-control" required autofocus />
                   </div>
                   <div class="form-group col-md-6 text-left">
                     <!--<label for="inputValue">Value:</label>
@@ -229,18 +229,13 @@
               </button>
             </div>
             <div class="modal-body p-4">
-              <form v-on:submit.prevent="edit(true)">
                 <div class="form-group">
-                  <div class="alert alert-danger text-left">This action will delete '{{safeEditInfo.instrument.description}}'</div>
+                  <div class="alert alert-danger text-left">This action will delete '{{safeEditInfo.data.description}}'</div>
                 </div>
-                <div class="form-group" hidden>
-                  <button id="deleteButton" class="btn btn-primary btn-block btn-lg" type="submit">Delete</button>
-                </div>
-              </form>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" v-on:click="cancelDialog">Cancel</button>
-              <button type="button" class="btn btn-primary" v-on:click="triggerClickEvent('deleteButton')">Delete</button>
+              <button type="button" class="btn btn-primary" v-on:click="edit(true)">Delete</button>
             </div>
           </div>
         </div>
@@ -268,7 +263,7 @@ export default {
         sectorIndex: null
       },
       safeEditInfo: {
-        instrument: {
+        data: {
           id: null,
           code: null,
           description: null,
@@ -304,9 +299,9 @@ export default {
     ...mapActions({
       getBasicAdminDataAction: "getBasicAdminDataAction",
       ensureAuthorized: "ensureAuthorized",
-      addAction: "addInstrumentAction",
-      editAction: "editInstrumentAction",
-      deleteAction: "deleteInstrumentAction"
+      addAction: "addAction",
+      editAction: "editAction",
+      deleteAction: "deleteAction"
     }),
     //
     //
@@ -328,7 +323,7 @@ export default {
       this.selectedIndex = -1;
 
       this.safeEditInfo = {
-        instrument: {
+        data: {
           id: null,
           code: null,
           description: null,
@@ -345,22 +340,27 @@ export default {
     //
     //
     //
-    async add() {
+    add() {
       // //e.preventDefault() - already blocked with modifier
       this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         const instr = this.newInstrument;
 
-        let data = {
-          type: this.instrumentTypes[instr.typeIndex],
-          currencyId: this.currencies[instr.currencyIndex].id,
-          code: this.newInstrument.code,
-          entityId: this.entities[instr.entityIndex].id,
-          countryId: this.instrumentDomiciles[instr.domicileIndex].code,
-          sectorId: this.sectors[instr.sectorIndex].id,
-          description: instr.description
+        const requestInfo = {
+          data: {
+            type: this.instrumentTypes[instr.typeIndex],
+            currencyId: this.currencies[instr.currencyIndex].id,
+            code: this.newInstrument.code,
+            entityId: this.entities[instr.entityIndex].id,
+            countryId: this.instrumentDomiciles[instr.domicileIndex].code,
+            sectorId: this.sectors[instr.sectorIndex].id,
+            description: instr.description
+          },
+          url: `/admin/instruments`,
+          list: "supportedInstruments"
         };
-        this.addAction(data);
+
+        this.addAction(requestInfo);
         this.cancelDialog();
       } else {
         this.cancelDialog();
@@ -370,16 +370,18 @@ export default {
     //
     //
     //
-    async edit(isDelete) {
+    edit(isDelete) {
       // e.preventDefault() - already blocked with modifier
 
       this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         //map ui selections to persistence model attributes
-        this.safeEditInfo.instrument.currencyId = this.currencies[this.safeEditInfo.currencyIndex].id;
-        this.safeEditInfo.instrument.entityId = this.entities[this.safeEditInfo.entityIndex].id;
-        this.safeEditInfo.instrument.countryId = this.instrumentDomiciles[this.safeEditInfo.domicileIndex].code;
-        this.safeEditInfo.instrument.sectorId = this.sectors[this.safeEditInfo.sectorIndex].id;
+        const data = this.safeEditInfo.data;
+
+        data.currencyId = this.currencies[this.safeEditInfo.currencyIndex].id;
+        data.entityId = this.entities[this.safeEditInfo.entityIndex].id;
+        data.countryId = this.instrumentDomiciles[this.safeEditInfo.domicileIndex].code;
+        data.sectorId = this.sectors[this.safeEditInfo.sectorIndex].id;
 
         if (isDelete) {
           this.deleteAction(this.safeEditInfo);
@@ -402,7 +404,7 @@ export default {
       const selectedObject = this.supportedInstruments[this.selectedIndex];
 
       this.safeEditInfo = {
-        instrument: {
+        data: {
           id: selectedObject.id,
           code: selectedObject.code,
           description: selectedObject.description,
@@ -417,7 +419,9 @@ export default {
         currencyIndex: this.currencies.findIndex(item => item.id == selectedObject.currencyId),
         sectorIndex: this.sectors.findIndex(item => item.id == selectedObject.sectorId),
         //
-        index: this.selectedIndex
+        index: this.selectedIndex,
+        url: `/admin/instrument/${selectedObject.id}`,
+        list: "supportedInstruments"
       };
       if (isDelete) {
         this.showDeleteDialog = true;
