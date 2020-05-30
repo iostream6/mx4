@@ -17,5 +17,7 @@ public interface BrokerRepository extends MongoRepository<Broker, String> {
     public List<Broker> findByUserId(String userId);
 
     public Optional<Broker> findByUserIdAndId(String userId, String Id);
+    
+    public Optional<Broker> findByUserIdAndName(String userId, String name);
 
 }
