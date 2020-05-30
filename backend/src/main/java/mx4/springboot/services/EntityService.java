@@ -1,6 +1,9 @@
 /*
  * 2020.04.02 - Created | Base functionality QC'ed
  * 2020.05.24 - Implemented Admin CRUD endpoints for Instruments. Add minor improvements to Entity endpoint implementation
+ *
+ * // TODO when an entity is deleted, all associated instruments ought to be deleted as well. When an instrument is deleted, it ought to be deleted from all portfolio transactions
+ * // Simple solution for now may be to preclude delete of Entity that has one or more instruments. Ditto for instruments that have one or more transactions
  */
 package mx4.springboot.services;
 
@@ -75,6 +78,7 @@ public class EntityService {
     @DeleteMapping("/admin/entities/{id}")
     public void deleteEntity(@PathVariable String id) {
         entityRepository.deleteById(id);
+        //TODO when an entity is deleted, all associated instruments ought to be deleted as well
     }
 //
 // -- Sector objects    
@@ -120,6 +124,7 @@ public class EntityService {
     @DeleteMapping("/admin/instrument/{id}")
     public void deleteInstrument(@PathVariable String id) {
         instrumentRepository.deleteById(id);
+        //TODO when an instrument is deleted, it ought to be deleted from all portfolio transactions
     }
 
 }
