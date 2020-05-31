@@ -2,6 +2,7 @@ package mx4.springboot.services;
 
 /*
  * 2020.04.10  - Created
+ * 2020.05.31  - Updated handleLogoutRequest to use String parameter and renamed Blacklist transfer object
  * TODO - Internationalization
  */
 import java.util.HashMap;
@@ -12,7 +13,7 @@ import mx4.springboot.persistence.JWTBlacklistRepository;
 import mx4.springboot.persistence.UserRepository;
 import mx4.springboot.model.security.AuthenticationRequestModel;
 import mx4.springboot.security.utils.TokenManager;
-import mx4.springboot.security.utils.TokenManager.Jwt;
+import mx4.springboot.security.utils.TokenManager.Blacklist;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -79,13 +80,16 @@ public class UserService {
     }
 
     @PostMapping("/signout")
-    public Map<String, Object> handleLogoutRequest(@RequestBody Jwt jwt) {
+    public Map<String, Object> handleLogoutRequest(@RequestBody String accessToken) {
 
-        //we ignore whatever valid is specified by the user (if at all) and determine the actual value based on the Jwt
-        jwt.setValidUntil(tokenManager.isValidUntil(jwt.getToken()));
+        final Blacklist blacklistItem = new Blacklist();
+        
+        blacklistItem.setToken(accessToken);
+        //we ignore whatever valid is specified by the user (if at all) and determine the actual value based on the Blacklist
+        blacklistItem.setValidUntil(tokenManager.isValidUntil(accessToken));
         //Blacklist the token - if it was invalid/expired, the expireAfterSeconds value in DB will be zero, meaning it can be deleted straight away
         //                      if it was not expired and was valid, the token is blacklisted!
-        jwtBlacklistRepo.save(jwt);
+        jwtBlacklistRepo.save(blacklistItem);
 
         Map<String, Object> clientInfo = new HashMap();
         clientInfo.put("success", true);

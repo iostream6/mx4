@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
  *
  * @author Ilamah, Osho
  */
-public interface JWTBlacklistRepository extends MongoRepository<TokenManager.Jwt, String> {
+public interface JWTBlacklistRepository extends MongoRepository<TokenManager.Blacklist, String> {
 
-    List<TokenManager.Jwt> findByToken(String token);
+    List<TokenManager.Blacklist> findByToken(String token);
 }
