@@ -1,5 +1,6 @@
 /*
  * 2020.04.08  - Created
+ * 2020.05.31  - Added getRole method to allow easier deserialize of role info 
  */
 package mx4.springboot.services;
 
@@ -57,7 +58,7 @@ public class DataRepositoryUserDetailsService implements UserDetailsService {
     public void createUser(User user, int... roles) {//package level exposure
         user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
         user.setEnabled(false); //Will only be activated after confirm via email
-        user.setAccountNonLocked(true); 
+        user.setAccountNonLocked(true);
         user.setAccountNonExpired(true);
 
         List<User.Role> userRoles = new ArrayList<>(2);
@@ -74,8 +75,6 @@ public class DataRepositoryUserDetailsService implements UserDetailsService {
         userRoles.forEach((role) -> {
             roles.add(new SimpleGrantedAuthority(role.getRole()));
         });
-        
-        
 
         List<GrantedAuthority> grantedAuthorities = new ArrayList<>(roles);
         return grantedAuthorities;
@@ -85,6 +84,18 @@ public class DataRepositoryUserDetailsService implements UserDetailsService {
     private SpringSecurityUserExModel buildUserForAuthentication(User user, List<GrantedAuthority> authorities) {
         final SpringSecurityUserExModel springSecurityUser = new SpringSecurityUserExModel(user, true, authorities);
         return springSecurityUser;
+    }
+
+    public static User.Role getRole(final String role) {
+        for (User.Role r : rolesList) {
+            if (r.getRole().equals(role)) {
+                final User.Role rr = new User.Role();
+                rr.setId(r.getId());
+                rr.setRole(r.getRole());
+                return rr;
+            }
+        }
+        return null;
     }
 
     //initialize all supported currencies as a singleton list

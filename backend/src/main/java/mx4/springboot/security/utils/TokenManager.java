@@ -1,5 +1,6 @@
 /*
  * 2020.04.25  - Created
+ * 2020.05.31  - Standardized role claims
  */
 package mx4.springboot.security.utils;
 
@@ -17,7 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import mx4.springboot.model.User;
-import mx4.springboot.model.User.Role;
+import mx4.springboot.services.DataRepositoryUserDetailsService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -36,14 +37,13 @@ public class TokenManager {
     @Value("${app.jwt.expiration.millis}")
     private int JWT_EXPIRATION_MILLISECONDS;
 
-    private final String DELIMITER = "  ";
-
     public SpringSecurityUserExModel getSpringSecurityUserExModelFormToken(String token) {
         try {
             Claims claims = Jwts.parser()
                     .setSigningKey(SECRET)
                     .parseClaimsJws(token) // if invalid > SignatureException MalformedJwtException ExpiredJwtException UnsupportedJwtException IllegalArgumentException
                     .getBody();
+
             User user = new User();
 
             user.setId((String) claims.get("id"));
@@ -54,19 +54,14 @@ public class TokenManager {
             user.setAccountNonLocked((Boolean) claims.get("nonlocked"));
             user.setAccountNonExpired((Boolean) claims.get("nonexpired"));
 
-            final String[] roles = ((String) claims.get("roles")).split(DELIMITER);
-            final String[] roleIds = ((String) claims.get("roleIds")).split(DELIMITER);
+            final List<String> roleMaps = (List<String>) claims.get("roles");
 
-            Set<Role> userRoles = new LinkedHashSet<>(2); //using linked hashset to ensure the same order and DB unpersist uses this as well
-            for (int i = 0; i < roles.length; i++) {
-                final Role r = new Role();
-                r.setId(roleIds[i]);
-                r.setRole(roles[i]);
-                userRoles.add(r);
-            }
+            Set<User.Role> userRoles = new LinkedHashSet<>(2); //using linked hashset to ensure the same order and DB unpersist uses this as well
+            roleMaps.stream().forEachOrdered(role -> {
+                userRoles.add(DataRepositoryUserDetailsService.getRole(role));
+            });
 
             user.setRoles(userRoles);
-
             //we dont want null password (SpringSecurityUserExModel constructor will throw exception) - although this password will not be used for anything in reality
             user.setPassword("");
 
@@ -89,23 +84,15 @@ public class TokenManager {
         final long CURRENT_TIME = System.currentTimeMillis();
         Map<String, Object> claims = new HashMap();
 
-        StringBuilder rolesInfos = new StringBuilder(20);
-        StringBuilder rolesIds = new StringBuilder(200);
+        ArrayList<String> rolesInfos = new ArrayList<>(2);
 
-        final Iterator<Role> roles = springUser.getUser().getRoles().iterator();
+        final Iterator<User.Role> roles = springUser.getUser().getRoles().iterator();
 
         while (roles.hasNext()) {
-            final Role role = roles.next();
-            rolesInfos.append(role.getRole());
-            rolesIds.append(role.getId());
-            if (roles.hasNext()) {
-                rolesInfos.append(DELIMITER);
-                rolesIds.append(DELIMITER);
-            }
+            final User.Role role = roles.next();
+            rolesInfos.add(role.getRole());
         }
-        claims.put("roles", rolesInfos.toString());
-        claims.put("roleIds", rolesIds.toString());
-        //claims.put("username", springUser.getUser().getUsername());
+        claims.put("roles", rolesInfos);
         claims.put("id", springUser.getUser().getId());
         claims.put("usercode", springUser.getUser().getUserCode());
         //
@@ -136,11 +123,11 @@ public class TokenManager {
     }
 
     /**
-     * This entity is used for TTL blacklist persistence
+     * This entity is used for TTL JWT blacklist persistence
      *
      * @author Ilamah, Osho
      */
-    public static class Jwt {
+    public static class Blacklist {
 
         private String token;
         private Date validUntil;
@@ -160,5 +147,12 @@ public class TokenManager {
         public void setValidUntil(Date validUntil) {
             this.validUntil = validUntil;
         }
+    }
+
+    /**
+     * This class is used for persisting refresh tokens info
+     */
+    public static class Refresh {
+
     }
 }
