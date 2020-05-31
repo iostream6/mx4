@@ -1,6 +1,7 @@
 /**
  * 2020.05.23  - Added support for authetication persistence, portfolio CRUD
  * 2020.05.30  - Simplified/centralised add/edit/delete actions for domain objects
+ * 2020.05.31  - Added centralized logout action that supports current backend endpoint defn
  */
 
 import Vue from 'vue'
@@ -13,6 +14,7 @@ import Axios from "axios";
 Vue.use(Vuex)
 
 const AUTH_STORAGE_KEY = "xtinfo";
+const RFSH_STORAGE_KEY = "rtinfo";
 const ADMIN_ROLE = "ADMIN";
 
 export default new Vuex.Store({
@@ -151,6 +153,40 @@ export default new Vuex.Store({
   //
   //
   actions: {
+    //
+    //
+    //
+    /**
+     * Signout from the application.
+     * @param {*} context the required vuex context
+     */
+    async signoutAction(context) {
+      try {
+        // Create and use custom Axios instance with the right content-type (so the string is clean at the server,
+        // else Axios treats its as application/x-www-form-urlencoded and it gets = at the server end
+
+        const axiosResponse = await Axios.create({
+          headers: {
+            Authorization: `Bearer ${context.state.jwt}`,
+            'Content-Type': 'text/plain'
+          }
+        }).post(
+          `${context.state.server}/signout`, context.state.jwt
+        );
+        if (axiosResponse.data["success"]) {
+          context.commit("clearAuthentication");
+          //remove local storage
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+          localStorage.removeItem(RFSH_STORAGE_KEY);
+          return true;
+        }
+      } catch (error) {
+        //   TODO - handle error 
+      }
+      return false;
+    },
+
+
     //
     //
     //

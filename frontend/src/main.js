@@ -34,7 +34,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faSignInAlt, faUserPlus, faAngleLeft, faAngleDown, faTachometerAlt, faChartArea, faTable,
   faColumns, faBookOpen, faPlusSquare, faEdit,faTrashAlt, faCalendarAlt, faBriefcase, faHryvnia, faCoins,
   faChess, faChessPawn, faFont /* for actions table column */, 
-  /* transaction types */ faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater } from '@fortawesome/free-solid-svg-icons'
+  /* transaction types */ faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
+/* AppNavBar */ faUser } from '@fortawesome/free-solid-svg-icons'
 //alternatively, import all solid icons
 //import solid from "@fortawesome/fontawesome-free-solid";
 
@@ -52,7 +53,8 @@ import { faSignInAlt, faUserPlus, faAngleLeft, faAngleDown, faTachometerAlt, faC
 library.add(faSignInAlt, faUserPlus, faAngleLeft, faAngleDown, faTachometerAlt, faChartArea, faTable,
   faColumns, faBookOpen, faPlusSquare, faEdit,faTrashAlt, faCalendarAlt, faBriefcase, faHryvnia, faCoins,
   faChess, faChessPawn, faFont /* for actions table column */,
-  /* transaction types */ faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater)
+  /* transaction types */ faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
+  faUser)
 // you can also do library.add(solid) if you imported the entire style icons set above
 
 Vue.component('font-awesome-icon', FontAwesomeIcon)

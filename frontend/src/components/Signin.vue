@@ -94,7 +94,7 @@
 
 <script>
 import Axios from "axios";
-import { mapState, mapGetters, mapMutations } from "vuex";
+import { mapState, mapMutations } from "vuex";
 
 // TODO - use a signle view for singin/up/reset and decide which subview based on URL args
 
@@ -102,8 +102,6 @@ export default {
   name: "SigninView",
   computed: {
     ...mapState(["server", "user"]),
-    // isJWTValid returns a function so even though computed, it is not cached
-    ...mapGetters(["isJWTValid"])
   },
   data() {
     return {

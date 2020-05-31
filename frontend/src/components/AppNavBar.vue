@@ -1,3 +1,7 @@
+<!--  
+***  2020.05.31  - Use FA 5.0  and centralised logout action
+-->
+
 <template>
   <div>
     <!-- Navigation -->
@@ -20,7 +24,7 @@
             </li>
             <li class="nav-item dropdown" v-if="authenticated">
               <a class="nav-link dropdown-toggle" id="userDropdown" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <i class="fa fa-user fa-fw"></i>
+                <font-awesome-icon :icon="['fas', 'user']" />
               </a>
               <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
                 <a class="dropdown-item" href="#">Settings</a>
@@ -37,41 +41,25 @@
 </template>
 
 <script>
-import { mapState, mapGetters, mapMutations } from "vuex";
+import { mapState, mapActions } from "vuex";
 
 export default {
   name: "AppNavBar",
   computed: {
-    ...mapState(["server", "user", "authenticated"]),
-    ...mapGetters(["getAuthenticatedAxios"]),
-    // isJWTValid returns a function so even though computed, it is not cached
-    ...mapGetters(["isJWTValid"])
+    ...mapState(["server", "user", "authenticated", "jwt"])
   },
   props: {},
   methods: {
-    ...mapMutations(["clearAuthentication"]),
+    ...mapActions(["ensureAuthorized", "signoutAction"]),
     async handleSignout(e) {
       e.preventDefault();
-      if (this.isJWTValid(new Date()) == true) {
-        //prepare the validated data
-        let signoutData = {
-          token: this.jwt
-        };
-        try {
-          const axiosResponse = await this.getAuthenticatedAxios.post(
-            `${this.server}/signout`,
-            signoutData
-          );
-          if (axiosResponse.data["success"]) {
-            this.clearAuthentication();
+      this.ensureAuthorized(); //will updated authenticated state
+      if (this.authenticated == true) {
+        this.signoutAction().then(result => {
+          if (result == true) {
             this.$router.push("/");
           }
-        } catch (error) {
-          //     //todo forward to page!!!
-
-        }
-      }else{
-        this.clearAuthentication();
+        });
       }
     }
   }
