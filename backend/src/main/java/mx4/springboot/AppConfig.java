@@ -1,5 +1,6 @@
 /*
  * 2020.04.08  - Created
+ * 2020.06.02  - Updated CORS config to allow cross-origin cookies from client
  */
 package mx4.springboot;
 
@@ -66,11 +67,14 @@ public class AppConfig extends WebSecurityConfigurerAdapter implements WebMvcCon
         //https://github.com/spring-projects/spring-boot/issues/5834
         //https://github.com/axios/axios/issues/858
         // https://gist.github.com/CSKNK/4e4adde53a9c54f94e25e8a72f1251e8  https://gist.github.com/CSKNK/4e4adde53a9c54f94e25e8a72f1251e8
+        //https://stackoverflow.com/questions/51696601/
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3500", "*" /* wildcard needed to work for Talend API tester */));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-        //configuration.setAllowCredentials(Boolean.TRUE);
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3500"/*, "*" */ /* wildcard needed to work for Talend API tester */));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowCredentials(Boolean.TRUE);
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control",  "Accept", "Content-Type", 
+                "X-Requested-With", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        configuration.setExposedHeaders(Arrays.asList("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -87,7 +91,7 @@ public class AppConfig extends WebSecurityConfigurerAdapter implements WebMvcCon
         http.authorizeRequests()
                 //
                 // paths that require no authentication
-                .antMatchers("/", "/signin", "/signout", "/fonts/**", "/authenticate", "/signup").permitAll()
+                .antMatchers("/", "/signin", "/signout", "/fonts/**", "/authenticate", "/refresh", "/signup").permitAll()
                 //
                 //paths that require authenticated admin
                 //.antMatchers("")
