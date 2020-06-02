@@ -8,7 +8,6 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import mx4.springboot.persistence.JWTBlacklistRepository;
 import mx4.springboot.model.security.SpringSecurityUserExModel;
 import mx4.springboot.security.utils.TokenManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import mx4.springboot.persistence.TokenRepository;
 
 /**
  *
@@ -28,7 +28,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization", BEARER = "Bearer ";
 
     @Autowired
-    private JWTBlacklistRepository jwtBlacklistRepo;
+    private TokenRepository jwtBlacklistRepo;
 
     @Autowired
     private TokenManager tokenManager;
@@ -49,7 +49,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
                     // https://stackoverflow.com/questions/21978658/invalidating-json-web-tokens
                     // https://dzone.com/articles/stateless-authentication-with-json-web-tokens
                     //
-                    if (jwtBlacklistRepo.findByToken(token).isEmpty()) {
+                    if (jwtBlacklistRepo.findByValueAndType(token, "BLACKLISTED").isPresent() == false) {
                         //this token has not been blacklisted. It is authentic, unexpired and unblacklisted
                         //
                         ////No need to hit Database -- if we want to maintain server side sessions though, here might be an opportunity to load the associated user session from DB keyed by the jwt token
@@ -66,7 +66,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
                         UsernamePasswordAuthenticationToken pat = new UsernamePasswordAuthenticationToken(tokenUser, null, tokenUser.getAuthorities());
                         pat.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
                         SecurityContextHolder.getContext().setAuthentication(pat);
-                    } 
+                    }
                 }
             }
         }

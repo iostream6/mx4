@@ -1,6 +1,7 @@
 /*
  * 2020.04.25  - Created
  * 2020.05.31  - Standardized role claims
+ * 2020.06.02  - Added refresh token support
  */
 package mx4.springboot.security.utils;
 
@@ -35,7 +36,14 @@ public class TokenManager {
     private String SECRET;
 
     @Value("${app.jwt.expiration.millis}")
-    private int JWT_EXPIRATION_MILLISECONDS;
+    private int JWT_ACCESS_EXPIRATION_MILLISECONDS;
+
+    @Value("${app.jwt.refresh.duration.millis}")
+    private int JWT_REFRESH_EXPIRATION_MILLISECONDS;
+
+    public int getRefreshDuration() {
+        return JWT_REFRESH_EXPIRATION_MILLISECONDS;
+    }
 
     public SpringSecurityUserExModel getSpringSecurityUserExModelFormToken(String token) {
         try {
@@ -80,9 +88,9 @@ public class TokenManager {
         return null;
     }
 
-    public String createToken(SpringSecurityUserExModel springUser) {
+    public String[] createWebTokens(SpringSecurityUserExModel springUser) {
         final long CURRENT_TIME = System.currentTimeMillis();
-        Map<String, Object> claims = new HashMap();
+        final Map<String, Object> claims = new HashMap<>();
 
         ArrayList<String> rolesInfos = new ArrayList<>(2);
 
@@ -100,14 +108,22 @@ public class TokenManager {
         claims.put("nonlocked", springUser.getUser().isAccountNonLocked());
         claims.put("nonexpired", springUser.getUser().isAccountNonExpired());
 
-        //Jwts.parser().parse(SECRET).
-        return Jwts.builder()
-                .setClaims(claims)
+        final String refreshToken = Jwts.builder()
                 .setSubject(springUser.getUser().getUsername())
                 .setIssuedAt(new Date(CURRENT_TIME))
-                .setExpiration(new Date(CURRENT_TIME + JWT_EXPIRATION_MILLISECONDS))//is it internally converted to seconds, as JS uses seconds rather than millis since epoch?
+                .setExpiration(new Date(CURRENT_TIME + JWT_REFRESH_EXPIRATION_MILLISECONDS))//is it internally converted to seconds, as JS uses seconds rather than millis since epoch?
                 .signWith(SignatureAlgorithm.HS512, SECRET)
                 .compact();
+
+        final String accessToken = Jwts.builder()
+                .setClaims(claims)//NOTE!!
+                .setSubject(springUser.getUser().getUsername())
+                .setIssuedAt(new Date(CURRENT_TIME))
+                .setExpiration(new Date(CURRENT_TIME + JWT_ACCESS_EXPIRATION_MILLISECONDS))//is it internally converted to seconds, as JS uses seconds rather than millis since epoch?
+                .signWith(SignatureAlgorithm.HS512, SECRET)
+                .compact();
+
+        return new String[]{accessToken, refreshToken};
     }
 
     public Date isValidUntil(final String token) {
@@ -122,22 +138,35 @@ public class TokenManager {
         }
     }
 
+    public String getSub(final String token) {
+        try {
+            return Jwts.parser()
+                    .setSigningKey(SECRET)
+                    .parseClaimsJws(token)
+                    .getBody().getSubject();
+        } catch (Exception e) {
+            return " ";
+        }
+    }
+
     /**
-     * This entity is used for TTL JWT blacklist persistence
+     * This entity is used for TTL JWT blacklist and refresh list persistence
      *
      * @author Ilamah, Osho
      */
-    public static class Blacklist {
+    public static class Token {
 
-        private String token;
+        private String value;
         private Date validUntil;
+        private Type type;
+        private String key; // only used by refresh tokens
 
-        public String getToken() {
-            return token;
+        public String getValue() {
+            return value;
         }
 
-        public void setToken(String token) {
-            this.token = token;
+        public void setValue(String value) {
+            this.value = value;
         }
 
         public Date getValidUntil() {
@@ -147,12 +176,26 @@ public class TokenManager {
         public void setValidUntil(Date validUntil) {
             this.validUntil = validUntil;
         }
+
+        public Type getType() {
+            return type;
+        }
+
+        public void setType(Type type) {
+            this.type = type;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
     }
 
-    /**
-     * This class is used for persisting refresh tokens info
-     */
-    public static class Refresh {
-
+    public static enum Type {
+        BLACKLISTED, REFRESH
     }
+
 }
