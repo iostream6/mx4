@@ -228,7 +228,7 @@ export default {
     //
     async addBroker() {
       //e.preventDefault() - already blocked with modifier
-      this.ensureAuthorized(); //will updated authenticated state
+      await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         const requestInfo = {
           data: {
@@ -251,7 +251,7 @@ export default {
     //
     async editBroker(isDelete) {
       // //e.preventDefault() - already blocked with modifier
-      this.ensureAuthorized(); //will updated authenticated state
+      await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         if (isDelete) {
           this.safeEditBrokerInfo.url = `/api/broker/${this.user.userId}/${this.safeEditBrokerInfo.data.id}`;
@@ -292,7 +292,7 @@ export default {
         if (associatedPortfolio) {
           this.safeEditBrokerInfo.activePortfolioName = associatedPortfolio.name;
           this.showDeleteRejectionDialog = true;
-        }else{
+        } else {
           this.showDeleteBrokerDialog = true;
         }
       } else {

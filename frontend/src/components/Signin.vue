@@ -22,13 +22,13 @@
               <div class="invalid-feedback">{{response['password-error']}}</div>
             </div>
             <button class="btn btn-primary btn-block" type="submit">
-              <font-awesome-icon :icon="['fas', 'sign-in-alt']" /> Sign in
+              <font-awesome-icon :icon="['fas', 'sign-in-alt']" />Sign in
             </button>
             <a href="#" v-on:click.capture="formname='reset'">Forgot password?</a>
             <hr />
             <!-- <p>Don't have an account!</p>  -->
             <button class="btn btn-primary btn-block" type="button" v-on:click="formname='signup'">
-              <font-awesome-icon :icon="['fas', 'user-plus']" /> Sign up New Account
+              <font-awesome-icon :icon="['fas', 'user-plus']" />Sign up New Account
             </button>
           </form>
         </div>
@@ -41,7 +41,7 @@
             </div>
             <button class="btn btn-primary btn-block" type="submit">Reset Password</button>
             <a href="#" v-on:click="formname='signin'">
-              <font-awesome-icon :icon="['fas', 'angle-left']" /> Back
+              <font-awesome-icon :icon="['fas', 'angle-left']" />Back
             </a>
           </form>
         </div>
@@ -77,10 +77,10 @@
             </div>
             <hr />
             <button class="btn btn-primary btn-block" type="submit">
-              <font-awesome-icon :icon="['fas', 'user-plus']" /> Sign Up
+              <font-awesome-icon :icon="['fas', 'user-plus']" />Sign Up
             </button>
             <a href="#" v-on:click="formname='signin'">
-              <font-awesome-icon :icon="['fas', 'angle-left']" /> Back
+              <font-awesome-icon :icon="['fas', 'angle-left']" />Back
             </a>
           </form>
         </div>
@@ -101,7 +101,7 @@ import { mapState, mapMutations } from "vuex";
 export default {
   name: "SigninView",
   computed: {
-    ...mapState(["server", "user"]),
+    ...mapState(["server", "user"])
   },
   data() {
     return {
@@ -134,16 +134,12 @@ export default {
         "password-error": null
       };
       this.clearAuthentication();
-      await Axios.post(
-        `${this.server}/authenticate`,
-        thisInstanceObject.userdata
-      )
+      await Axios.post(`${this.server}/authenticate`, thisInstanceObject.userdata)
         .then(function(axiosResponse) {
           if (axiosResponse.data.success == true) {
             //mutations can only take one additional arg, so we construct a new multi-part object to move everything in one arg
             const authInfo = {
-              jwt: axiosResponse.data.jwt,
-              persist: true
+              jwt: axiosResponse.data.jwt
             };
             thisInstanceObject.setAuthenticated(authInfo);
             thisInstanceObject.$router.push("/main");
@@ -185,10 +181,7 @@ export default {
       };
 
       try {
-        const axiosResponse = await Axios.post(
-          `${this.server}/signup`,
-          signupData
-        );
+        const axiosResponse = await Axios.post(`${this.server}/signup`, signupData);
         if (axiosResponse.data["success"]) {
           this.$router.push("/");
         } else {
@@ -201,7 +194,7 @@ export default {
         //console.error(error);
       }
     }
-  },
+  }
 };
 </script>
 

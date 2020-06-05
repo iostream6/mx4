@@ -229,9 +229,9 @@
               </button>
             </div>
             <div class="modal-body p-4">
-                <div class="form-group">
-                  <div class="alert alert-danger text-left">This action will delete '{{safeEditInfo.data.description}}'</div>
-                </div>
+              <div class="form-group">
+                <div class="alert alert-danger text-left">This action will delete '{{safeEditInfo.data.description}}'</div>
+              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" v-on:click="cancelDialog">Cancel</button>
@@ -297,7 +297,7 @@ export default {
     //
     //
     ...mapActions({
-      getBasicAdminDataAction: "getBasicAdminDataAction",
+      //getBasicAdminDataAction: "getBasicAdminDataAction",
       ensureAuthorized: "ensureAuthorized",
       addAction: "addAction",
       editAction: "editAction",
@@ -340,12 +340,11 @@ export default {
     //
     //
     //
-    add() {
+    async add() {
       // //e.preventDefault() - already blocked with modifier
-      this.ensureAuthorized(); //will updated authenticated state
+      await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         const instr = this.newInstrument;
-
         const requestInfo = {
           data: {
             type: this.instrumentTypes[instr.typeIndex],
@@ -370,10 +369,9 @@ export default {
     //
     //
     //
-    edit(isDelete) {
+    async edit(isDelete) {
       // e.preventDefault() - already blocked with modifier
-
-      this.ensureAuthorized(); //will updated authenticated state
+      await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         //map ui selections to persistence model attributes
         const data = this.safeEditInfo.data;
@@ -431,16 +429,19 @@ export default {
       }
     }
   },
-  created() {
-    if (!this.isBasicAdminDataGotten) {
-      this.ensureAuthorized(); //will updated authenticated state
-      if (this.authenticated == true) {
-        this.getBasicAdminDataAction();
-      } else {
-        this.$router.push("/");
-      }
-    }
-  }
+  // created() {
+  //   if (!this.isBasicAdminDataGotten) {
+  //     const thisInstanceReference = this;
+  //     //will updated authenticated state
+  //     this.ensureAuthorized().then(function() {
+  //       if (thisInstanceReference.authenticated == true) {
+  //         thisInstanceReference.getBasicAdminDataAction();
+  //       } else {
+  //         thisInstanceReference.$router.push("/");
+  //       }
+  //     });
+  //   }
+  // }
 };
 </script>
 

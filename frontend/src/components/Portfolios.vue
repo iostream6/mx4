@@ -251,7 +251,7 @@ export default {
     async add() {
       //e.preventDefault() - already blocked with modifier
 
-      this.ensureAuthorized(); //will updated authenticated state
+      await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         const requestInfo = {
           data: {
@@ -274,7 +274,7 @@ export default {
     //
     //
     async edit(isDelete) {
-      this.ensureAuthorized(); //will updated authenticated state
+      await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         //map ui selections to persistence model attributes
         this.safeEditInfo.data.brokerId = this.brokers[this.safeEditInfo.brokerIndex].id;

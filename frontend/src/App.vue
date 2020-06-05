@@ -10,13 +10,13 @@ import { mapActions } from "vuex";
 
 export default {
   methods: {
-    ...mapActions(["reloadStateAction"])
+    ...mapActions(["ensureAuthorized"])
   },
   created() {
+    //let thisInstanceObject = this; //so that we can refer to it in the lambda callback
     //console.log("App Created ^ Reloading state");
-    this.reloadStateAction();
+    this.ensureAuthorized();
   }
-
 };
 </script>
 

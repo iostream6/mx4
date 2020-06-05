@@ -1,42 +1,30 @@
 <!--  
 ***  2020.05.31  - Use FA 5.0  and centralised logout action
+***  2020.06.04  - Switched to bootstrap-vue based navbar
 -->
 
 <template>
   <div>
-    <!-- Navigation -->
-    <nav class="sb-topnav navbar navbar-expand-lg navbar-dark bg-primary static-top">
-      <div class="container">
-        <a class="navbar-brand" href="#">Start Bootstrap</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarResponsive">
-          <ul class="navbar-nav ml-auto">
-            <li class="nav-item active">
-              <router-link class="nav-link" to="/">
-                Home
-                <span class="sr-only">(current)</span>
-              </router-link>
-            </li>
-            <li class="nav-item" v-if="authenticated">
-              <router-link class="nav-link" to="/main">App</router-link>
-            </li>
-            <li class="nav-item dropdown" v-if="authenticated">
-              <a class="nav-link dropdown-toggle" id="userDropdown" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <font-awesome-icon :icon="['fas', 'user']" />
-              </a>
-              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
-                <a class="dropdown-item" href="#">Settings</a>
-                <a class="dropdown-item" href="#">Activity Log</a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="signout" v-on:click="handleSignout">Logout</a>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
+    <b-navbar toggleable="lg" type="dark" variant="primary">
+      <b-navbar-toggle target="nav-collapse-group"></b-navbar-toggle>
+      <b-navbar-brand tag="h1">BootstrapMX4</b-navbar-brand>
+      <b-collapse id="nav-collapse-group" is-nav>
+        <b-navbar-nav class="ml-auto">
+          <!-- class ensures right aligned nav items -->
+          <b-nav-item to="/">Home</b-nav-item>
+          <b-nav-item v-if="authenticated" to="/main">App</b-nav-item>
+          <b-nav-item-dropdown v-if="authenticated" right>
+            <template v-slot:button-content>
+             <font-awesome-icon :icon="['fas', 'user']" />
+            </template>
+            <b-dropdown-item href="#">Settings</b-dropdown-item>
+            <b-dropdown-item href="#">Activity Log</b-dropdown-item>
+            <b-dropdown-divider></b-dropdown-divider>
+            <b-dropdown-item href="#" v-on:click.prevent="handleSignout">Logout</b-dropdown-item>
+          </b-nav-item-dropdown>
+        </b-navbar-nav>
+      </b-collapse>
+    </b-navbar>
   </div>
 </template>
 
@@ -46,14 +34,13 @@ import { mapState, mapActions } from "vuex";
 export default {
   name: "AppNavBar",
   computed: {
-    ...mapState(["server", "user", "authenticated", "jwt"])
+    ...mapState(["user", "authenticated"])
   },
   props: {},
   methods: {
     ...mapActions(["ensureAuthorized", "signoutAction"]),
-    async handleSignout(e) {
-      e.preventDefault();
-      this.ensureAuthorized(); //will updated authenticated state
+    async handleSignout() {
+      await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
         this.signoutAction().then(result => {
           if (result == true) {

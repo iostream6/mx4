@@ -1,5 +1,5 @@
 <!--  
-***  Please updated in line with Entities.vue - remove JWT things, etc
+***  2020.06.05 Now uses centralized functions for enforcing/restoring authourization
 -->
 
 <template>
@@ -62,43 +62,29 @@
 </template>
 
 <script>
-import { mapState, mapActions, mapGetters, mapMutations } from "vuex";
+import { mapState, mapActions } from "vuex";
 
 export default {
   name: "Dashboard",
   computed: {
-    ...mapState(["isBasicDataGotten"]),
-    // isJWTValid returns a function so even though computed, it is not cached
-    ...mapGetters(["isJWTValid"])
+    ...mapState(["isBasicDataGotten", "authenticated"])
   },
   methods: {
-    ...mapActions([
-      "getBasicDataAction",
-      "refreshTokenAction"
-    ]),
-    ...mapMutations(["clearAuthentication"])
+    ...mapActions(["getBasicDataAction", "ensureAuthorized"]),
   },
   mounted() {
-     let loggedIn = this.isJWTValid(new Date());
-
-    if (!loggedIn) {
-      this.refreshTokenAction();
-      //if after refresh attempt, still not valid? Force signin
-      loggedIn = this.isJWTValid(new Date());
-      if (!loggedIn) {
-        this.clearAuthentication();
-        this.$router.push("/");
-      }
+    if (!this.isBasicDataGotten) {
+      const thisInstanceReference = this;
+      //   //will updated authenticated state
+      this.ensureAuthorized().then(function() {
+        if (thisInstanceReference.authenticated == true) {
+          thisInstanceReference.getBasicDataAction();
+        } else {
+          thisInstanceReference.$router.push("/");
+        }
+      });
     }
-    //load brokers if needed
-    if (loggedIn && !this.isBasicDataGotten) {
-      this.getBasicDataAction();
-    }
-  //   // //load transactions - if needed
-  //   // if (loggedIn && !this.isBrokersGotten) {
-  //   //   this.getBrokersAction();
-  //   // }
-   }
+  }
 };
 </script>
 

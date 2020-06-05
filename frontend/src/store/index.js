@@ -2,6 +2,8 @@
  * 2020.05.23  - Added support for authetication persistence, portfolio CRUD
  * 2020.05.30  - Simplified/centralised add/edit/delete actions for domain objects
  * 2020.05.31  - Added centralized logout action that supports current backend endpoint defn
+ * 2020.06.04  - Added frontend cookie based refresh token support and centralized functions for enforcing/restoring authorization
+ *               Temporarily commented out BasicAdminData data retrieval routines.
  */
 
 import Vue from 'vue'
@@ -13,8 +15,6 @@ import Axios from "axios";
 
 Vue.use(Vuex)
 
-const AUTH_STORAGE_KEY = "xtinfo";
-const RFSH_STORAGE_KEY = "rtinfo";
 const ADMIN_ROLE = "ADMIN";
 
 export default new Vuex.Store({
@@ -26,7 +26,7 @@ export default new Vuex.Store({
     //message: "My error Message",
     user: { username: null, userId: null, usercode: null },
     server: 'http://localhost:8080',
-    jwt: null,
+    accessToken: null,
     brokers: [],
     portfolios: [],
     currencies: [],
@@ -53,7 +53,7 @@ export default new Vuex.Store({
   getters: {
     getAuthenticatedAxios(state) {
       return Axios.create({
-        headers: { Authorization: `Bearer ${state.jwt}` }
+        headers: { Authorization: `Bearer ${state.accessToken}` }
       });
     },
     //
@@ -65,10 +65,10 @@ export default new Vuex.Store({
      */
     isJWTValid(state) {
       return function (currentTime) {
-        if (state.jwt == null || state.jwt.split('.').length < 3) {
+        if (state.accessToken == null || state.accessToken.split('.').length < 3) {
           return false;
         }
-        const jwtData = JSON.parse(atob(state.jwt.split('.')[1]));
+        const jwtData = JSON.parse(atob(state.accessToken.split('.')[1]));
         const exp = new Date(jwtData.exp * 1000); //converted to milliseconds
         console.log(`Lamda Local authentication check:: ${currentTime < exp}`);
         return currentTime < exp;
@@ -83,33 +83,28 @@ export default new Vuex.Store({
     //
     //
     setAuthenticated(state, authInfo) {
-      state.jwt = authInfo.jwt;
-      state.authenticated = true;
+      state.accessToken = authInfo.jwt;
+
+      console.log(`setAuth JWT:${state.accessToken}`)
 
       //Get the other user info from JWT
-      const jwtData = JSON.parse(atob(state.jwt.split('.')[1]));
+      const jwtData = JSON.parse(atob(state.accessToken.split('.')[1]));
       state.user.userId = jwtData.id;
       state.user.usercode = jwtData.usercode;
       state.user.username = jwtData.sub;
-
       const userRoles = jwtData.roles;
-
       state.isAdminUser = (userRoles.indexOf(ADMIN_ROLE) > -1);
-
       console.log("set Authenticated Called and passed");
-
-      if (authInfo.persist) {
-        localStorage.setItem(AUTH_STORAGE_KEY, authInfo.jwt);
-        console.log("setAuthenticated persisted info to local store");
-      }
-
+      state.authenticated = true;
     },
     //
     //
     clearAuthentication(state) {
-      state.jwt = null;
+      state.accessToken = null;
       state.authenticated = false;
       state.user.username = null;
+      state.user.userId = null;
+      state.user.usercode = null;
     },
     //
     //
@@ -137,16 +132,18 @@ export default new Vuex.Store({
       state.currencies = data["currencies"];
       state.brokers = data["brokers"];
       state.portfolios = data["portfolios"];
-      state.isBasicDataGotten = true;
-    },
-    //
-    //
-    setBasicAdminData(state, data) {
       state.entities = data["entities"];
       state.sectors = data["sectors"];
       state.supportedInstruments = data["instruments"];
-      state.isBasicAdminDataGotten = true;
-    }
+      state.transactions = data["transactions"];
+      state.isBasicDataGotten = true;
+    },
+    // //
+    // //
+    // setBasicAdminData(state, data) {
+      
+    //   state.isBasicAdminDataGotten = true;
+    // }
     //
   },
   //
@@ -164,20 +161,16 @@ export default new Vuex.Store({
       try {
         // Create and use custom Axios instance with the right content-type (so the string is clean at the server,
         // else Axios treats its as application/x-www-form-urlencoded and it gets = at the server end
-
         const axiosResponse = await Axios.create({
           headers: {
-            Authorization: `Bearer ${context.state.jwt}`,
+            Authorization: `Bearer ${context.state.accessToken}`,
             'Content-Type': 'text/plain'
           }
         }).post(
-          `${context.state.server}/signout`, context.state.jwt
+          `${context.state.server}/signout`, context.state.accessToken
         );
-        if (axiosResponse.data["success"]) {
+        if (axiosResponse.data["success"] == true) {
           context.commit("clearAuthentication");
-          //remove local storage
-          localStorage.removeItem(AUTH_STORAGE_KEY);
-          localStorage.removeItem(RFSH_STORAGE_KEY);
           return true;
         }
       } catch (error) {
@@ -186,35 +179,6 @@ export default new Vuex.Store({
       return false;
     },
 
-
-    //
-    //
-    //
-    /**
-     * Reloads key application states from local (client-side) storage.
-     * @param {*} context the required vuex context
-     */
-    async reloadStateAction(context) {
-      if (context.state.jwt == null) {
-        //AUTHENTICATION STATE INFO
-        const authInfo = {
-          jwt: localStorage.getItem(AUTH_STORAGE_KEY),
-          persist: false
-        };
-        if (authInfo.jwt != null) {
-          const currentTime = new Date();
-          const jwtData = JSON.parse(atob(authInfo.jwt.split('.')[1]));
-          const exp = new Date(jwtData.exp * 1000); //converted to milliseconds
-          const valid = currentTime < exp;
-          if (valid) {
-            context.commit("setAuthenticated", authInfo);
-          } else {
-            //TODO attempt to ask for refresh token
-          }
-        }
-        //OTHER STATES
-      }
-    },
     //
     //
     //
@@ -314,28 +278,9 @@ export default new Vuex.Store({
         if (axiosResponse.status == 200) {
           results["currencies"] = axiosResponse.data;
         }
-        if (results["brokers"] && results["portfolios"] && results["currencies"]) {
-          context.commit("setBasicData", results);
-        }
-      } catch (error) {
-        //    TODO - handle error
-        if (error.response) {
-          // console.log(error.response.data);
-          // console.log(error.response.status);
-          // console.log(error.response.headers);
-        }
-      }
-    },
-    /**
-    * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
-    * user as well as supported currencies
-    * @param {*} context the required vuex context
-    */
-    async getBasicAdminDataAction(context) {
-      try {
-        let results = {};
+
         //entities
-        let axiosResponse = await context.getters.getAuthenticatedAxios.get(
+        axiosResponse = await context.getters.getAuthenticatedAxios.get(
           `${context.state.server}/api/entities`
         );
         if (axiosResponse.status == 200) {
@@ -350,39 +295,110 @@ export default new Vuex.Store({
         }
         // instruments
         axiosResponse = await context.getters.getAuthenticatedAxios.get(
-          `${context.state.server}/admin/instruments`
+          `${context.state.server}/api/instruments`
         );
         if (axiosResponse.status == 200) {
           results["instruments"] = axiosResponse.data;
         }
-        if (results["sectors"] && results["entities"] && results["instruments"]) {
-          context.commit("setBasicAdminData", results);
+
+        //transactions
+        axiosResponse = await context.getters.getAuthenticatedAxios.get(
+          `${context.state.server}/api/transactions/${context.state.user.userId}`
+        );
+        if (axiosResponse.status == 200) {
+          results["transactions"] = axiosResponse.data;
         }
 
+        if (results["brokers"] && results["portfolios"] && results["currencies"] && results["sectors"] && results["entities"] 
+        && results["instruments"] && results["transactions"]) {
+          context.commit("setBasicData", results);
+        }
       } catch (error) {
         //    TODO - handle error
         if (error.response) {
           // console.log(error.response.data);
+          // console.log(error.response.status);
+          // console.log(error.response.headers);
         }
       }
     },
+    // /**
+    // * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
+    // * user as well as supported currencies
+    // * @param {*} context the required vuex context
+    // */
+    // async getBasicAdminDataAction(context) {
+    //   try {
+    //     // let results = {};
+    //     // //entities
+    //     // let axiosResponse = await context.getters.getAuthenticatedAxios.get(
+    //     //   `${context.state.server}/api/entities`
+    //     // );
+    //     // if (axiosResponse.status == 200) {
+    //     //   results["entities"] = axiosResponse.data;
+    //     // }
+    //     // //sectors
+    //     // axiosResponse = await context.getters.getAuthenticatedAxios.get(
+    //     //   `${context.state.server}/api/sectors`
+    //     // );
+    //     // if (axiosResponse.status == 200) {
+    //     //   results["sectors"] = axiosResponse.data;
+    //     // }
+    //     // // instruments
+    //     // axiosResponse = await context.getters.getAuthenticatedAxios.get(
+    //     //   `${context.state.server}/admin/instruments`
+    //     // );
+    //     // if (axiosResponse.status == 200) {
+    //     //   results["instruments"] = axiosResponse.data;
+    //     // }
+    //     // if (results["sectors"] && results["entities"] && results["instruments"]) {
+    //     //   context.commit("setBasicAdminData", results);
+    //     // }
+
+    //   } catch (error) {
+    //     //    TODO - handle error
+    //     if (error.response) {
+    //       // console.log(error.response.data);
+    //     }
+    //   }
+    // },
     /**
      * 
      * @param {*} context 
      */
     async ensureAuthorized(context) {
       const currentDate = new Date();
-      if (!context.getters.isJWTValid(currentDate)) {
-        //todo ATEMPT TO REFRESH TOKEN
-        //
-        //
-        //
-        //
-        //
-        //
-        //if after refresh attempt, still not valid? Force signin
+      if (context.getters.isJWTValid(currentDate)) {
+        console.log("Ensured authorize without refresh call");
+      } else {
+        //attempt to obtain access token using refresh token in httpOnly cookie
+        console.log("Attempting refresh . . . ");
+        try {
+          // Create and use custom Axios instance with the right content-type, also include the withCredentials
+          // property so that the subsystems knows to send any unexpired refresh token stored in cookie
+          const axiosResponse = await Axios.create({
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'text/plain'
+            }
+          }).post(
+            `${context.state.server}/refresh`
+          );
+          if (axiosResponse.data["success"] == true) {
+            const authInfo = {
+              jwt: axiosResponse.data.jwt
+            };
+            context.commit("setAuthenticated", authInfo);
+          }
+        } catch (error) {
+          //TODO handle error
+        }
+        //after refresh attempt, check if valid auth
         if (!context.getters.isJWTValid(currentDate)) {
           context.commit("clearAuthentication");
+          console.log("Ensured authorize FAILED refresh call");
+        } else {
+          console.log("Ensured authorize WITH refresh call");
         }
       }
     },

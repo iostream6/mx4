@@ -1,64 +1,63 @@
 <!--  
 ***  2020.05.30  - Use FA 5.0
+***  2020.05.31  - Updated to use bootstrap-vue
 -->
 
 <template>
-  <div class="sb-nav-fixed">
+  <div>
     <app-nav-bar />
     <div id="layoutSidenav">
       <!-- The left side nav pane -->
       <div id="layoutSidenav_nav">
-        <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+        <b-nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
           <div class="sb-sidenav-menu">
             <div class="nav">
-              <div class="sb-sidenav-menu-heading">Core</div>
-              <a class="nav-link" href="#" v-on:click="activeComponent='dashboard'">
+              <b-link class="nav-link" href="#">
                 <div class="sb-nav-link-icon">
                   <font-awesome-icon :icon="['fas', 'tachometer-alt']" />
                 </div>Dashboard
-              </a>
-              <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLayouts" aria-expanded="false" aria-controls="collapseLayouts">
+              </b-link>
+              <!-- Mgmt Menu -->
+              <b-link class="nav-link" href="#" v-b-toggle.accordion-mgmt>
                 <div class="sb-nav-link-icon">
                   <font-awesome-icon :icon="['fas', 'columns']" />
                 </div>Management
                 <div class="sb-sidenav-collapse-arrow">
                   <font-awesome-icon :icon="['fas', 'angle-down']" />
                 </div>
-              </a>
-              <div class="collapse" id="collapseLayouts" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
-                <nav class="sb-sidenav-menu-nested nav">
-                  <a class="nav-link" href="#" v-on:click="activeComponent='brokerages'">Brokerages</a>
-                  <a class="nav-link" href="#" v-on:click="activeComponent='portfolios'">Portfolios</a>
-                  <a class="nav-link" href="#" v-on:click="activeComponent='transactions'">Transactions</a>
-                </nav>
+              </b-link>
+              <!-- -->
+              <div>
+                <b-nav class="sb-sidenav-menu-nested nav">
+                  <b-collapse id="accordion-mgmt" visible accordion="sidenavAccordion" role="tabpanel">
+                    <b-link class="nav-link" href="#" v-on:click="activeComponent='brokerages'">Brokerages</b-link>
+                    <b-link class="nav-link" href="#" v-on:click="activeComponent='portfolios'">Portfolios</b-link>
+                    <b-link class="nav-link" href="#" v-on:click="activeComponent='transactions'">Transactions</b-link>
+                  </b-collapse>
+                </b-nav>
               </div>
-              <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="false" aria-controls="collapsePages">
+              <!-- end MGMT menu -->
+              <!-- Mgmt Menu -->
+              <b-link class="nav-link" href="#" v-b-toggle.accordion-admin v-if="isAdminUser"> 
                 <div class="sb-nav-link-icon">
                   <font-awesome-icon :icon="['fas', 'book-open']" />
                 </div>Admin
                 <div class="sb-sidenav-collapse-arrow">
                   <font-awesome-icon :icon="['fas', 'angle-down']" />
                 </div>
-              </a>
-              <div v-if="isAdminUser" class="collapse" id="collapsePages" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
-                <nav class="sb-sidenav-menu-nested nav">
-                  <a class="nav-link" href="#" v-on:click="activeComponent='entities'">Entities</a>
-                </nav>
+              </b-link>
+              <!-- -->
+              <div v-if="isAdminUser">
+                <b-nav class="sb-sidenav-menu-nested nav">
+                  <b-collapse id="accordion-admin" accordion="sidenavAccordion" role="tabpanel">
+                    <b-link class="nav-link" href="#" v-on:click="activeComponent='entities'">Entities</b-link>
+                  </b-collapse>
+                </b-nav>
               </div>
-              <div class="sb-sidenav-menu-heading">Addons</div>
-              <a class="nav-link" href="charts.html">
-                <div class="sb-nav-link-icon">
-                  <font-awesome-icon :icon="['fas', 'chart-area']" />
-                </div>Charts
-              </a>
-              <a class="nav-link" href="tables.html">
-                <div class="sb-nav-link-icon">
-                  <font-awesome-icon :icon="['fas', 'table']" />
-                </div>Tables
-              </a>
+              <!-- end MGMT menu -->
             </div>
           </div>
-        </nav>
+        </b-nav>
       </div>
 
       <!-- THE MAIN AREA CONTENT PLACEHOLDERS - THE CONTENT THAT IS SHOWN DEPENDS ON THE ACTIVE link (captured by The main area content  place holders -->

@@ -22,7 +22,7 @@ import { mapState } from "vuex";
 export default {
   name: "Home",
   computed: {
-    ...mapState(["user", "jwt"])
+    ...mapState(["user"])
   },
   props: {}
 };

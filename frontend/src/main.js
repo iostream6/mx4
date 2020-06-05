@@ -1,14 +1,39 @@
 /**
  * 2020.05.30  - Upgradded to font-awesome 5.0
+ * 2020.05.31  - Added Bootstrap-Vue
  */
 
 import Vue from 'vue'
+
+/////////////////////////////////   BOOTSTRAP VUE  /////////////////////////////////////////
+//       Import only the plugins/components of bootstrap-vue that we need
+//      
+//     TODO use method of importing only needed plugings 
+//  
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
+
+// Install BootstrapVue
+Vue.use(BootstrapVue)
+// Optionally install the BootstrapVue icon components plugin
+Vue.use(IconsPlugin)
+
+// CCS  files
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue/dist/bootstrap-vue.css'
+
+/////////////////////////////////  END  BOOTSTRAP VUE  ///////////////////////////////////
+
+
+
 import App from './App.vue'
 import router from './router'
 import store from './store'
 
-import 'bootstrap'; // brings in the JS bits
-import 'bootstrap/dist/css/bootstrap.min.css'
+// REMOVED since I switched to bootstrap-vue
+//import 'bootstrap'; // brings in the JS bits
+//import 'bootstrap/dist/css/bootstrap.min.css'
 
 // this works for v-4 with npm install font-awesome
 //import 'font-awesome/css/font-awesome.min.css'
