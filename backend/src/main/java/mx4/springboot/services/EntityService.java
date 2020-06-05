@@ -99,7 +99,7 @@ public class EntityService {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
     }
 
-    @GetMapping("/admin/instruments")
+    @GetMapping("/api/instruments")
     public List<Instrument> readAllInstruments() {
         return instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
     }

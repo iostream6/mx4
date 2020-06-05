@@ -4,6 +4,7 @@ package mx4.springboot.services;
  * 2020.04.10  - Created
  * 2020.05.31  - Updated handleLogoutRequest to use String parameter and renamed Blacklist transfer object
  * 2020.06.02  - Added refresh token support
+ * 2020.06.05  - Refresh token cookie delete advice is now sent to client from server on logout
  * TODO - Internationalization
  */
 import java.util.Date;
@@ -86,7 +87,7 @@ public class UserService {
         refreshToken.setValidUntil(tokenManager.isValidUntil(tokens[1]));
         refreshToken.setType(TokenManager.Type.REFRESH);
         refreshToken.setKey(tokens[0]); //allows us to be able to delete/blacklist this 
-        
+
         tokenRepository.save(refreshToken);
 
         final Cookie cookie = new Cookie("refresh-token", tokens[1]);
@@ -101,7 +102,7 @@ public class UserService {
     }
 
     @PostMapping("/signout")
-    public Map<String, Object> handleLogoutRequest(@RequestBody String accessToken) {
+    public Map<String, Object> handleLogoutRequest(@RequestBody String accessToken, HttpServletResponse response) {
         final Token tokenToBlacklist = new Token();
         tokenToBlacklist.setValue(accessToken);
         tokenToBlacklist.setValidUntil(tokenManager.isValidUntil(accessToken));
@@ -109,17 +110,25 @@ public class UserService {
         //                      if it was not expired and was valid, the token is blacklisted!
         tokenToBlacklist.setType(TokenManager.Type.BLACKLISTED);
         tokenToBlacklist.setKey("");//not needed
-        
+
         tokenRepository.save(tokenToBlacklist); // will prevent this token from being usable ever again. Once the token expiration date reaches, the mongoDB collection will automagically drop this document
-        
+
         //block the refresh token from being used by blacklisting it
         Optional<Token> rto = tokenRepository.findByKey(accessToken);
-        
-        if(rto.isPresent()){
+
+        if (rto.isPresent()) {
             final Token rt = rto.get();
             rt.setType(TokenManager.Type.BLACKLISTED);
-            rt.setValidUntil(tokenToBlacklist.getValidUntil());           
-            tokenRepository.save(rt); 
+            rt.setValidUntil(tokenToBlacklist.getValidUntil());
+            tokenRepository.save(rt);
+
+            final Cookie cookie = new Cookie("refresh-token", rt.getValue());
+            cookie.setMaxAge(0); //force to be deleted immediately
+            //cookie.setSecure(true); //TODO commented out in dev mode, please enable in production!
+            cookie.setHttpOnly(true);
+            cookie.setPath("/");
+            
+            response.addCookie(cookie);
         }
 
         Map<String, Object> clientInfo = new HashMap();
@@ -154,7 +163,7 @@ public class UserService {
                     newRefreshToken.setKey(tokens[0]); //allows us to be able to delete/blacklist this 
 
                     tokenRepository.save(newRefreshToken);
-                    
+
                     final Cookie cookie = new Cookie("refresh-token", tokens[1]);
                     cookie.setMaxAge(tokenManager.getRefreshDuration() / 1000);
                     //cookie.setSecure(true); //TODO commented out in dev mode, please enable in production!

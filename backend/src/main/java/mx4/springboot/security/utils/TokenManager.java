@@ -2,6 +2,7 @@
  * 2020.04.25  - Created
  * 2020.05.31  - Standardized role claims
  * 2020.06.02  - Added refresh token support
+ * 2020.06.05  - Token model now include id field
  */
 package mx4.springboot.security.utils;
 
@@ -156,6 +157,7 @@ public class TokenManager {
      */
     public static class Token {
 
+        private String id;
         private String value;
         private Date validUntil;
         private Type type;
@@ -192,6 +194,15 @@ public class TokenManager {
         public void setKey(String key) {
             this.key = key;
         }
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
     }
 
     public static enum Type {

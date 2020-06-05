@@ -2,10 +2,13 @@
  * 2020.04.05 - Created
  * 2020.05.23 - QC'ed implementation of CRU for single user - Delete pending
  * 2020.05.29 - Implemented portfolio delete endpoint. Added user role CRUD endpoints for transactions.
+ * 2020.06.05 - Method to read all transactions in all portfolios owned/readable by a given user implemented.
  */
 package mx4.springboot.services;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import mx4.springboot.model.Portfolio;
@@ -40,6 +43,10 @@ public class PortfolioService {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    private final Comparator<Transaction> dataTransactionComporator = (Transaction a, Transaction b) -> {
+        return a.getDate().compareTo(b.getDate());
+    };
 
     /**
      * Creates a new portfolio record. By default, the requesting user is assumed to be the whole owner and is given read/write access to the created portfolio.
@@ -173,12 +180,32 @@ public class PortfolioService {
      * @return a list of transactions in the portfolio, provided the user has read access
      */
     @GetMapping("/api/transactions/{uid}/{pid}")
-    public ResponseEntity<?> readTransactions(@PathVariable String uid, @PathVariable String pid) {
+    public ResponseEntity<?> readPortfolioTransactions(@PathVariable String uid, @PathVariable String pid) {
         final Optional<Portfolio.PortfolioUser> portfolioUserOptional = portfolioUserRepository.findByUserIdAndPortfolioID(uid, pid);
         if (portfolioUserOptional.isPresent() && portfolioUserOptional.get().isRead()) {
             return ResponseEntity.ok(transactionRepository.findByPortfolioId(pid));
         }
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+    }
+
+    /**
+     * Gets all transactions from all portfolios associated with a given user.
+     *
+     * @param uid the requesting user's id
+     * @return a list of transactions in the user's portfolios, provided the user has read access
+     */
+    @GetMapping("/api/transactions/{uid}")
+    public ResponseEntity<?> readUserTransactions(@PathVariable String uid) {
+        final List<Portfolio.PortfolioUser> pus = portfolioUserRepository.findByUserId(uid);
+        final List<Transaction> transactions = new ArrayList<>();
+        for (final Portfolio.PortfolioUser pu : pus) {
+            if (pu.isRead()) {
+                transactions.addAll(transactionRepository.findByPortfolioId(pu.getPortfolioID()));
+            }
+        }
+        //
+        Collections.sort(transactions, dataTransactionComporator);
+        return ResponseEntity.ok(transactions);
     }
 
     /**
