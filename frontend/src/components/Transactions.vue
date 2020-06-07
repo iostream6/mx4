@@ -1,6 +1,7 @@
 <!--  
 ***  2020.05.29  - Created 
-***  2020.06.05  - Implemented add and basic list functionalitiy
+***  2020.06.05  - Implemented add and basic list functionality
+***  2020.06.07  - Switched to bootstrap-vue table. Implemented transaction list, filter/sort/pagination support
 -->
 
 <template>
@@ -8,29 +9,83 @@
     <div>
       <main>
         <div class="container-fluid">
-          <div class="row"></div>
           <div class="row mt-3">
-            <div class="col-lg-9">
+            <div class="col-lg-7">
               <h3 class="text-primary float-left">Transactions</h3>
             </div>
-            <div class="col-lg-3">
-              <b-button b-button variant="primary" class="float-right" v-b-modal.add-modal>
-                <font-awesome-icon :icon="['fas', 'plus-square']" />&nbsp;&nbsp; Add New
-              </b-button>
+            <div class="col-lg-5">
+              <b-form inline>
+                <b-input-group class="ml-4">
+                  <b-form-input v-model="filter" type="search" id="filterInput" placeholder="Type to Search"></b-form-input>
+                  <b-input-group-append>
+                    <b-button :disabled="!filter" @click="filter = ''">Clear</b-button>
+                  </b-input-group-append>
+                </b-input-group>
+
+                <b-button-group class="ml-3">
+                  <b-button variant="primary" v-b-modal.add-modal>
+                    <font-awesome-icon :icon="['fas', 'plus-square']" />
+                  </b-button>
+                  <b-button :variant="selectedRows.length != 1 ? 'secondary' : 'primary'" :disabled="selectedRows.length != 1" @click.prevent="showEditDialogLauncher(false)">
+                    <font-awesome-icon :icon="['fas', 'edit']" />
+                  </b-button>
+                  <b-button :variant="selectedRows.length == 0 ? 'secondary' : 'primary'" :disabled="selectedRows.length == 0 " @click="deleteTransactions()">
+                    <font-awesome-icon :icon="['fas', 'trash-alt']" />
+                  </b-button>
+                </b-button-group>
+              </b-form>
             </div>
+
+            <div class="col-lg-2"></div>
           </div>
           <hr class="bg-primary" />
+
+          <div class="row">
+            <div class="col-lg-12">
+              <b-table
+                :striped="striped"
+                :bordered="bordered"
+                :borderless="borderless"
+                :outlined="outlined"
+                :selectable="selectable"
+                :small="small"
+                :hover="hover"
+                :dark="dark"
+                :fixed="fixed"
+                :items="transactions"
+                :fields="tableFields"
+                :thead-tr-class="headerRowClass"
+                :sort-by="sortBy"
+                :sort-desc="sortDesc"
+                :primary-key="primaryKey"
+                :filter="filter"
+                :filterIncludedFields="filterOn"
+                :current-page="currentPage"
+                :per-page="perPage"
+                @row-selected="onRowSelected"
+              ></b-table>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-lg-12">
+              <b-pagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" align="fill" size="sm" class="my-0"></b-pagination>
+            </div>
+          </div>
+
+          <!-- 
+
           <div class="row">
             <div class="col-lg-12">
               <table class="table table-bordered table-striped">
-                <!--<colgroup>
+                <! - -<colgroup>
                   <col span="1" style="width: 10%;" />
                   <col span="1" style="width: 10%;" />
                   <col span="1" style="width: 8%;" />
                   <col span="1" style="width: 6%;" />
                   <col span="1" style="width: 17%;" />
                   <col span="1" style="width: 6%;" />
-                </colgroup>-->
+                </colgroup> - - >
                 <thead>
                   <tr class="bg-primary text-light">
                     <th class="text-center">
@@ -57,32 +112,37 @@
                   </tr>
                 </thead>
                 <tbody>
+                  <! - -
                   <tr v-for="(t, index) in transactions" v-bind:key="index">
                     <td>{{t.date}}</td>
-                   <td>{{portfolios.find(item => item.id == t.portfolioId).code}}</td>
-                     <td>{{supportedInstruments.find(item => item.id == t.instrumentId).code}}</td>
-                     <td>{{t.type}}</td>
+                    <td>{{portfolios.find(item => item.id == t.portfolioId).code}}</td>
+                    <td>{{supportedInstruments.find(item => item.id == t.instrumentId).code}}</td>
+                    <td>{{t.type}}</td>
                     <td>{{currencies.find(item => item.id == t.currencyId).code}}</td>
                     <td>{{t.units}}</td>
-                    <!--<td class="text-left">{{sectors.find(item => item.id == i.sectorId ).name}}</td>-->
+                    <! - - <td class="text-left">{{sectors.find(item => item.id == i.sectorId ).name}}</td> - ->
                     <td>
                       <a href="#" class="text-success" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(false)">
                         <font-awesome-icon :icon="['fas', 'edit']" />
                       </a> &nbsp; &nbsp; &nbsp; &nbsp;
-                      <!-- Call a function that first makes a safe copy before it launches the dialog-->
+                      <! - - Call a function that first makes a safe copy before it launches the dialog - ->
                       <a href="#" class="text-danger" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(true)">
                         <font-awesome-icon :icon="['fas', 'trash-alt']" />
                       </a>
                     </td>
                   </tr>
+                  - - >
                 </tbody>
               </table>
             </div>
-          </div>
+          </div>-->
+
+          <!-- -->
         </div>
       </main>
     </div>
 
+    <!-- ADD TRANSACTION MODAL -->
     <div>
       <b-modal id="add-modal" @ok="triggerClickEvent('addButton', $event)" @hidden="cancelDialog()" centered title="Add New Transaction">
         <form>
@@ -150,11 +210,24 @@
         </form>
       </b-modal>
     </div>
+
+    <!-- EDIT TRANSACTION MODAL  -->
   </div>
 </template>
 
 <script>
 import { mapState, mapActions } from "vuex";
+
+//todo SPECIFY date options, see
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat
+//https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleDateString
+
+//en-CA locale gives yyyy-MM-dd | https://stackoverflow.com/a/60012660
+const dateFormatter = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit"
+});
 
 export default {
   name: "Transactions",
@@ -172,7 +245,7 @@ export default {
         currency: null,
         instrument: null
       },
-
+      headerRowClass: "bg-primary text-light",
       errorInfo: {
         date: null,
         portfolio: null,
@@ -196,16 +269,117 @@ export default {
         //
         "is-valid": false
       },
+      tableFields: [
+        // //column that need special formatting
+        {
+          key: "date",
+          sortable: true,
+          formatter: value => {
+            return dateFormatter.format(value);
+          }
+        },
+        {
+          key: "portfolio"
+          //label: "PORT",
+          //sortable: true
+        },
+        {
+          key: "instrument",
+          sortable: true
+        },
+        {
+          key: "type",
+          sortable: true
+        },
+        {
+          key: "currency"
+          //sortable: true
+        },
+        {
+          key: "units"
+          //sortable: true
+        },
+        {
+          key: "amountPerUnit",
+          label: "Rate"
+          //sortable: true
+        }
+      ],
 
-      showEditDialog: false,
+      //additional table props
+      primaryKey: "id",
+      striped: false,
+      bordered: false,
+      borderless: false,
+      outlined: true,
+      small: true,
+      hover: false,
+      dark: false,
+      fixed: true,
+      selectable: true,
+      sortBy: "date",
+      sortDesc: false,
+      filter: null,
+      filterOn: [],
       showDeleteDialog: false,
-      selectedIndex: -1
+      transactions: [],
+      selectedRows: [],
+      currentPage: 1,
+      totalRows: 1,
+      perPage: 30,
+      pageOptions: [10, 20, 30, 50]
     };
   },
   computed: {
-    ...mapState(["user", "authenticated", "transactions", "transactionTypes", "currencies", "portfolios", "supportedInstruments"])
+    ...mapState(["user", "authenticated", "transactionTypes", "currencies", "portfolios", "supportedInstruments"])
   },
   methods: {
+    //
+    //
+    //
+    ...mapActions({
+      ensureAuthorized: "ensureAuthorized",
+      addAction: "addAction",
+      getAction: "getAction",
+      deletesAction: "multipleDeleteAction"
+      //editAction: "editInstrumentAction",
+      //deleteAction: "deleteInstrumentAction"
+    }),
+    onRowSelected(items) {
+      this.selectedRows = items;
+    },
+    //
+    //
+    //
+    async tableDataProvider(/*tableContext*/) {
+      //console.log(tableContext);
+      //todo translate table context info to URL
+      const requestInfo = {
+        url: `/api/transactions/${this.user.userId}`,
+        list: "transactions",
+        replace: true
+      };
+      const pageData = await this.getAction(requestInfo);
+
+      const items = [];
+
+      for (const t of pageData) {
+        const item = {};
+        for (const input of ["id", "type", "units", "amountPerUnit"]) {
+          item[input] = t[input];
+        }
+
+        item.date = new Date(t.date);
+        item.portfolio = this.portfolios.find(item => item.id == t.portfolioId).code;
+        item.currency = this.currencies.find(item => item.id == t.currencyId).code;
+        item.instrument = this.supportedInstruments.find(item => item.id == t.instrumentId).code;
+        //item.portfolio = this.portfolios.find(item => item.id == t.portfolioId).code;
+
+        items.push(item);
+      }
+
+      return items;
+    },
     //
     //
     //
@@ -258,15 +432,6 @@ export default {
     //
     //
     //
-    ...mapActions({
-      ensureAuthorized: "ensureAuthorized",
-      addAction: "addAction"
-      //editAction: "editInstrumentAction",
-      //deleteAction: "deleteInstrumentAction"
-    }),
-    //
-    //
-    //
     cancelDialog() {
       this.transaction = {
         date: null,
@@ -276,7 +441,7 @@ export default {
         taxes: null,
         type: null,
         //
-        
+
         portfolio: null,
         currency: null,
         instrument: null
@@ -300,43 +465,119 @@ export default {
       //e.preventDefault() - already blocked with modifier
       await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
-           const t = this.transaction;
-          let d = {
-            date: t.date,
-            units: t.units,
-            amountPerUnit: t.amountPerUnit,
-            fees: t.fees,
-            taxes: t.taxes,
-            type: t.type,
-            //
-            //
-            portfolioId: t.portfolio.id,
-            currencyId: t.currency.id,
-            instrumentId: t.instrument.id,
-          };
-          const requestInfo = {
-            data: d,
-            url: `/api/transactions/${this.user.userId}`,
-            list: "transactions"
-          };
-          this.addAction(requestInfo);
-          this.cancelDialog();
+        const t = this.transaction;
+        let d = {
+          date: t.date,
+          units: t.units,
+          amountPerUnit: t.amountPerUnit,
+          fees: t.fees,
+          taxes: t.taxes,
+          type: t.type,
+          //
+          //
+          portfolioId: t.portfolio.id,
+          currencyId: t.currency.id,
+          instrumentId: t.instrument.id
+        };
+        const requestInfo = {
+          data: d,
+          url: `/api/transactions/${this.user.userId}`,
+          list: "transactions"
+        };
+        this.addAction(requestInfo);
+        this.cancelDialog();
       } else {
         this.cancelDialog();
         this.$router.push("/");
       }
       console.log("Called Add");
+    },
+    // //
+    // //
+    // //
+    deleteTransactions() {
+      const thisInstanceReference = this;
+      this.$bvModal
+        .msgBoxConfirm("Are you sure you want to deleted all the selected transactions?", {
+          title: "Please Confirm",
+          //size: "sm",
+          buttonSize: "sm",
+          okVariant: "danger",
+          okTitle: "Yes",
+          cancelTitle: "No",
+          footerClass: "p-2",
+          hideHeaderClose: false,
+          centered: true
+        })
+        .then(value => {
+          if (value == true) {
+            this.ensureAuthorized().then(function() {
+              if (thisInstanceReference.authenticated == true) {
+                let parameter = null;
+                for (const t of thisInstanceReference.selectedRows) {
+                  if (parameter == null) {
+                    parameter = t.id;
+                  } else {
+                    parameter = `${parameter},${t.id}`;
+                  }
+                }
+                const requestInfo = {
+                  url: `/api/transactions/${thisInstanceReference.user.userId}/${parameter}`,
+                  //list: "transactions",
+                  replace: true
+                };
+                thisInstanceReference.deletesAction(requestInfo).then(function(response) {
+                  console.log(`Multiple gets response: ${response}`);
+                });
+              } else {
+                thisInstanceReference.$router.push("/");
+              }
+            });
+          }
+          //this.boxTwo = value;
+        })
+        .catch();
+    },
+    // //
+    // //
+    // //
+    showEditDialogLauncher(isDelete) {
+      console.log(`Calling Edit ${isDelete}`);
     }
-    // //
-    // //
-    // //
-    // edit(isDelete) {},
-    // //
-    // //
-    // //
-    // showEditDialogLauncher(isDelete) {
+  },
+  mounted() {
+    if (!this.isBasicDataGotten) {
+      const thisInstanceReference = this;
+      //will updated authenticated state
+      this.ensureAuthorized().then(function() {
+        if (thisInstanceReference.authenticated == true) {
+          const requestInfo = {
+            url: `/api/transactions/${thisInstanceReference.user.userId}`,
+            //list: "transactions",
+            replace: true
+          };
+          thisInstanceReference.getAction(requestInfo).then(function(response) {
+            for (const t of response) {
+              const item = {};
+              for (const input of ["id", "type", "units", "amountPerUnit"]) {
+                item[input] = t[input];
+              }
 
-    // }
+              item.date = new Date(t.date);
+              item.portfolio = thisInstanceReference.portfolios.find(item => item.id == t.portfolioId).code;
+              item.currency = thisInstanceReference.currencies.find(item => item.id == t.currencyId).code;
+              item.instrument = thisInstanceReference.supportedInstruments.find(item => item.id == t.instrumentId).code;
+              //item.portfolio = this.portfolios.find(item => item.id == t.portfolioId).code;
+
+              thisInstanceReference.transactions.push(item);
+            }
+            thisInstanceReference.totalRows = thisInstanceReference.transactions.length;
+          });
+        } else {
+          thisInstanceReference.$router.push("/");
+        }
+      });
+    }
   }
 };
 </script>
