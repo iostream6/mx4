@@ -281,6 +281,7 @@ export default {
           userId: selectedBroker.userId
         },
         index: this.selectedBrokerIndex,
+        length: 1,
         //url: set later
         list: "brokers"
       };

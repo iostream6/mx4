@@ -236,6 +236,7 @@ export default {
         },
         brokerIndex: this.brokers.findIndex(item => item.id == selectedPortfolio.brokerId),
         index: this.selectedIndex,
+        length: 1,
         //url: set later
         list: "portfolios"
       };

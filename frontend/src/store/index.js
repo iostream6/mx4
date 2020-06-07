@@ -4,6 +4,8 @@
  * 2020.05.31  - Added centralized logout action that supports current backend endpoint defn
  * 2020.06.04  - Added frontend cookie based refresh token support and centralized functions for enforcing/restoring authorization
  *               Temporarily commented out BasicAdminData data retrieval routines.
+ * 2020.06.07  - Introduced centralized getAction method which knows how to READ/get stuff from server with optional injection into shared state
+ *               Transactions now retrieved via getAction 
  */
 
 import Vue from 'vue'
@@ -30,7 +32,7 @@ export default new Vuex.Store({
     brokers: [],
     portfolios: [],
     currencies: [],
-    transactions: [],
+    //transactions: [],
     isBasicDataGotten: false,
     isBasicAdminDataGotten: false,
     isTransactionsGotten: false,
@@ -113,6 +115,17 @@ export default new Vuex.Store({
     },
     //
     //
+    setReadObjects(state, objectInfo) {
+      const list = state[objectInfo.list];
+      if (objectInfo.replace) {
+        list.splice(0, list.length, ...objectInfo.data);
+      } else {
+        //append
+        list.push(...objectInfo.data);
+      }
+    },
+    //
+    //
     setEditedObject(state, objectInfo) {
       const item = state[objectInfo.list][objectInfo.index];
       // todo use spreader
@@ -123,8 +136,8 @@ export default new Vuex.Store({
     },
     //
     //
-    setRemovedObject(state, objectInfo) {
-      state[objectInfo.list].splice(objectInfo.index, 1);
+    setRemovedObjects(state, objectInfo) {
+      state[objectInfo.list].splice(objectInfo.index, objectInfo.length);
     },
     //
     // 
@@ -135,13 +148,12 @@ export default new Vuex.Store({
       state.entities = data["entities"];
       state.sectors = data["sectors"];
       state.supportedInstruments = data["instruments"];
-      state.transactions = data["transactions"];
       state.isBasicDataGotten = true;
     },
     // //
     // //
     // setBasicAdminData(state, data) {
-      
+
     //   state.isBasicAdminDataGotten = true;
     // }
     //
@@ -178,12 +190,8 @@ export default new Vuex.Store({
       }
       return false;
     },
-
-    //
-    //
-    //
     /**
-     * Sends Axios request to backend API to create a new domain object entry
+     * Sends Axios request to backend API to add a new domain object entry
      * @param {*} context the required vuex context
      * @param {*} requestInfo a JSON object containing domain object infomation (ex id), the create URL and the state list name for mutation
      */
@@ -194,15 +202,38 @@ export default new Vuex.Store({
         );
         if (axiosResponse.status == 200) {
           requestInfo.data = axiosResponse.data;// the server add id field, and may append others as well (e.g. PortfolioUsers) 
-          context.commit("setAddedObject", requestInfo);
+          requestInfo.success = true;
         }
       } catch (error) {
-        //   TODO - handle error 
+        requestInfo.success = false;
       }
+      if(requestInfo.list != null){
+        context.commit("setAddedObject", requestInfo);
+      }
+      return requestInfo.success;
     },
-    //
-    //
-    //
+    /**
+     * Sends Axios request to backend API to retrieve a collection of domain objects
+     * @param {*} context the required vuex context
+     * @param {*} requestInfo a JSON object containing url, and other relevant processing information
+     */
+    async getAction(context, requestInfo) {
+      try {
+        const axiosResponse = await context.getters.getAuthenticatedAxios.get(
+          `${context.state.server}${requestInfo.url}`);
+        if (axiosResponse.status == 200) {
+          requestInfo.data = axiosResponse.data;
+          requestInfo.success = true;
+        }
+      } catch (error) {
+        requestInfo.data = [];
+        requestInfo.success = false;
+      }
+      if(requestInfo.list != null){
+        context.commit("setReadObjects", requestInfo);
+      }
+      return requestInfo.data;
+    },
     /**
      * Sends Axios request to backend API to edit an existing domain object
      * @param {*} context the required vuex context
@@ -214,18 +245,16 @@ export default new Vuex.Store({
           `${context.state.server}${requestInfo.url}`, requestInfo.data
         );
         if (axiosResponse.status == 200) {
-          context.commit("setEditedObject", requestInfo);
+          requestInfo.success = true;
         }
       } catch (error) {
-        //    TODO - handle error
-        if (error.response) {
-          // console.log(error.response.data);
-        }
+        requestInfo.success = false;
       }
+      if(requestInfo.list != null){
+        context.commit("setEditedObject", requestInfo);
+      }
+      return requestInfo.success;
     },
-    //
-    //
-    //
     /**
      * Sends Axios request to backend API to delete an existing domain object
      * @param {*} context the required vuex context
@@ -238,16 +267,16 @@ export default new Vuex.Store({
           `${context.state.server}${requestInfo.url}`
         );
         if (axiosResponse.status == 200) {
-          context.commit("setRemovedObject", requestInfo);
+          requestInfo.success = true;
         }
       } catch (error) {
-        //    TODO - handle error
-        if (error.response) {
-          // console.log(error.response.data);
-        }
+        requestInfo.success = false;
       }
+      if(requestInfo.list != null){
+        context.commit("setRemovedObjects", requestInfo);
+      }
+      return requestInfo.success;
     },
-
 
     /**
      * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
@@ -301,16 +330,8 @@ export default new Vuex.Store({
           results["instruments"] = axiosResponse.data;
         }
 
-        //transactions
-        axiosResponse = await context.getters.getAuthenticatedAxios.get(
-          `${context.state.server}/api/transactions/${context.state.user.userId}`
-        );
-        if (axiosResponse.status == 200) {
-          results["transactions"] = axiosResponse.data;
-        }
-
-        if (results["brokers"] && results["portfolios"] && results["currencies"] && results["sectors"] && results["entities"] 
-        && results["instruments"] && results["transactions"]) {
+        if (results["brokers"] && results["portfolios"] && results["currencies"] && results["sectors"] && results["entities"]
+          && results["instruments"]) {
           context.commit("setBasicData", results);
         }
       } catch (error) {

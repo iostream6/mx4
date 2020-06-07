@@ -418,6 +418,7 @@ export default {
         sectorIndex: this.sectors.findIndex(item => item.id == selectedObject.sectorId),
         //
         index: this.selectedIndex,
+        length: 1,
         url: `/admin/instrument/${selectedObject.id}`,
         list: "supportedInstruments"
       };
@@ -428,7 +429,7 @@ export default {
         this.showEditDialog = true;
       }
     }
-  },
+  }
   // created() {
   //   if (!this.isBasicAdminDataGotten) {
   //     const thisInstanceReference = this;
