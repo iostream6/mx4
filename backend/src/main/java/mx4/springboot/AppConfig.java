@@ -69,7 +69,7 @@ public class AppConfig extends WebSecurityConfigurerAdapter implements WebMvcCon
         // https://gist.github.com/CSKNK/4e4adde53a9c54f94e25e8a72f1251e8  https://gist.github.com/CSKNK/4e4adde53a9c54f94e25e8a72f1251e8
         //https://stackoverflow.com/questions/51696601/
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3500"/*, "*" */ /* wildcard needed to work for Talend API tester */));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3500", "*" /* wildcard needed to work for Talend API tester */));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowCredentials(Boolean.TRUE);
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control",  "Accept", "Content-Type", 

@@ -17,11 +17,11 @@ public class Transaction {
 
     private String portfolioId;
 
-    private String currencyId;
+    private int currencyId;
 
     private String instrumentId;
 
-    private int units;
+    private double units;
 
     private double amountPerUnit;
 
@@ -30,6 +30,16 @@ public class Transaction {
     private double taxes;
 
     private Type type;
+    
+    private boolean provisional;
+
+    public boolean isProvisional() {
+        return provisional;
+    }
+
+    public void setProvisional(boolean provisional) {
+        this.provisional = provisional;
+    }
 
     public String getId() {
         return id;
@@ -55,11 +65,11 @@ public class Transaction {
         this.portfolioId = portfolioId;
     }
 
-    public String getCurrencyId() {
+    public int getCurrencyId() {
         return currencyId;
     }
 
-    public void setCurrencyId(String currencyId) {
+    public void setCurrencyId(int currencyId) {
         this.currencyId = currencyId;
     }
 
@@ -71,11 +81,11 @@ public class Transaction {
         this.instrumentId = instrumentId;
     }
 
-    public int getUnits() {
+    public double getUnits() {
         return units;
     }
 
-    public void setUnits(int units) {
+    public void setUnits(double units) {
         this.units = units;
     }
 
