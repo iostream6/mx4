@@ -6,6 +6,7 @@
  *               Temporarily commented out BasicAdminData data retrieval routines.
  * 2020.06.07  - Introduced centralized getAction method which knows how to READ/get stuff from server with optional injection into shared state
  *               Transactions now retrieved via getAction 
+ * 2020.06.08  - Transaction retrieval now merged with basic data retrieval and placed in shared state
  */
 
 import Vue from 'vue'
@@ -32,7 +33,7 @@ export default new Vuex.Store({
     brokers: [],
     portfolios: [],
     currencies: [],
-    //transactions: [],
+    transactions: [],
     isBasicDataGotten: false,
     isBasicAdminDataGotten: false,
     isTransactionsGotten: false,
@@ -137,7 +138,17 @@ export default new Vuex.Store({
     //
     //
     setRemovedObjects(state, objectInfo) {
-      state[objectInfo.list].splice(objectInfo.index, objectInfo.length);
+      //used to specify delete a list of  contiguous objects, starting at a given index
+      const list = state[objectInfo.list];
+      if (objectInfo.index != null && objectInfo.length != null) {
+        list.splice(objectInfo.index, objectInfo.length);
+      }
+      //used to specify a list of objects, by their indexes
+      if (objectInfo.indexes != null) {
+        for (const i of objectInfo.indexes) {
+          list.splice(i, 1);
+        }
+      }
     },
     //
     // 
@@ -148,6 +159,7 @@ export default new Vuex.Store({
       state.entities = data["entities"];
       state.sectors = data["sectors"];
       state.supportedInstruments = data["instruments"];
+      state.transactions = data["transactions"];
       state.isBasicDataGotten = true;
     },
     // //
@@ -207,10 +219,10 @@ export default new Vuex.Store({
       } catch (error) {
         requestInfo.success = false;
       }
-      if(requestInfo.list != null){
+      if (requestInfo.list != null && requestInfo.success == true) {
         context.commit("setAddedObject", requestInfo);
       }
-      return requestInfo.success;
+      return requestInfo;
     },
     /**
      * Sends Axios request to backend API to retrieve a collection of domain objects
@@ -229,7 +241,7 @@ export default new Vuex.Store({
         requestInfo.data = [];
         requestInfo.success = false;
       }
-      if(requestInfo.list != null){
+      if (requestInfo.list != null && requestInfo.success == true) {
         context.commit("setReadObjects", requestInfo);
       }
       return requestInfo.data;
@@ -250,7 +262,7 @@ export default new Vuex.Store({
       } catch (error) {
         requestInfo.success = false;
       }
-      if(requestInfo.list != null){
+      if (requestInfo.list != null && requestInfo.success == true) {
         context.commit("setEditedObject", requestInfo);
       }
       return requestInfo.success;
@@ -272,7 +284,7 @@ export default new Vuex.Store({
       } catch (error) {
         requestInfo.success = false;
       }
-      if(requestInfo.list != null){
+      if (requestInfo.list != null && requestInfo.success == true) {
         context.commit("setRemovedObjects", requestInfo);
       }
       return requestInfo.success;
@@ -330,8 +342,29 @@ export default new Vuex.Store({
           results["instruments"] = axiosResponse.data;
         }
 
+        //transactions
+        axiosResponse = await context.getters.getAuthenticatedAxios.get(
+          `${context.state.server}/api/transactions/${context.state.user.userId}`
+        );
+        if (axiosResponse.status == 200) {
+          results["transactions"] = [];
+          for (const t of axiosResponse.data) {
+            const item = {};
+            for (const input of ["id", "type", "units", "amountPerUnit", "fees", "taxes"]) {
+              item[input] = t[input];
+            }
+            item.date = new Date(t.date);
+            //the following text attributes are helpful/needed in table filtering, hence they are used
+            item.portfolioCode = results["portfolios"].find(item => item.id == t.portfolioId).code;
+            item.currencyCode = results["currencies"].find(item => item.id == t.currencyId).code;
+            item.instrumentCode = results["instruments"].find(item => item.id == t.instrumentId).code;
+            //
+            results["transactions"].push(item);
+          }
+        }
+
         if (results["brokers"] && results["portfolios"] && results["currencies"] && results["sectors"] && results["entities"]
-          && results["instruments"]) {
+          && results["instruments"] && results["transactions"]) {
           context.commit("setBasicData", results);
         }
       } catch (error) {

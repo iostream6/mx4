@@ -2,8 +2,8 @@
 ***  2020.05.29  - Created 
 ***  2020.06.05  - Implemented add and basic list functionality
 ***  2020.06.07  - Switched to bootstrap-vue table. Implemented transaction list, filter/sort/pagination support
+***  2020.06.10  - Improved add transaction implementation. Now uses transaction model in app state
 -->
-
 <template>
   <div id="layoutSidenav_content">
     <div>
@@ -43,6 +43,7 @@
           <div class="row">
             <div class="col-lg-12">
               <b-table
+                ref="ttable"
                 :striped="striped"
                 :bordered="bordered"
                 :borderless="borderless"
@@ -69,7 +70,7 @@
 
           <div class="row">
             <div class="col-lg-12">
-              <b-pagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" align="fill" size="sm" class="my-0"></b-pagination>
+              <b-pagination v-model="currentPage" :total-rows="transactions.length" :per-page="perPage" align="fill" size="sm" class="my-0"></b-pagination>
             </div>
           </div>
 
@@ -144,7 +145,7 @@
 
     <!-- ADD TRANSACTION MODAL -->
     <div>
-      <b-modal id="add-modal" @ok="triggerClickEvent('addButton', $event)" @hidden="cancelDialog()" centered title="Add New Transaction">
+      <b-modal id="add-modal" @ok="validateModalForm('addButton', $event)" @hidden="cancelDialog()" centered title="Add New Transaction">
         <form>
           <!-- @reset="onReset"-->
           <!--<b-form-group label="Date:" label-for="newTransactionDatex">
@@ -216,7 +217,7 @@
 </template>
 
 <script>
-import { mapState, mapActions } from "vuex";
+import { mapState, mapActions, mapMutations } from "vuex";
 
 //todo SPECIFY date options, see
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat
@@ -278,13 +279,15 @@ export default {
             return dateFormatter.format(value);
           }
         },
+
         {
-          key: "portfolio"
-          //label: "PORT",
+          key: "portfolioCode",
+          label: "Portfolio"
           //sortable: true
         },
         {
-          key: "instrument",
+          key: "instrumentCode",
+          label: "Instrument",
           sortable: true
         },
         {
@@ -292,8 +295,12 @@ export default {
           sortable: true
         },
         {
-          key: "currency"
+          key: "currencyCode",
+          label: "Currency"
           //sortable: true
+          // formatter: value => {
+          //   return value.code;
+          // }
         },
         {
           key: "units"
@@ -322,16 +329,14 @@ export default {
       filter: null,
       filterOn: [],
       showDeleteDialog: false,
-      transactions: [],
       selectedRows: [],
       currentPage: 1,
-      totalRows: 1,
       perPage: 30,
       pageOptions: [10, 20, 30, 50]
     };
   },
   computed: {
-    ...mapState(["user", "authenticated", "transactionTypes", "currencies", "portfolios", "supportedInstruments"])
+    ...mapState(["user", "authenticated", "transactions", "transactionTypes", "currencies", "portfolios", "supportedInstruments"])
   },
   methods: {
     //
@@ -341,49 +346,19 @@ export default {
       ensureAuthorized: "ensureAuthorized",
       addAction: "addAction",
       getAction: "getAction",
-      deletesAction: "multipleDeleteAction"
+      deleteAction: "deleteAction"
       //editAction: "editInstrumentAction",
       //deleteAction: "deleteInstrumentAction"
     }),
+    ...mapMutations({setAddedObject: "setAddedObject"}),
+    //
     onRowSelected(items) {
       this.selectedRows = items;
     },
     //
     //
     //
-    async tableDataProvider(/*tableContext*/) {
-      //console.log(tableContext);
-      //todo translate table context info to URL
-      const requestInfo = {
-        url: `/api/transactions/${this.user.userId}`,
-        list: "transactions",
-        replace: true
-      };
-      const pageData = await this.getAction(requestInfo);
-
-      const items = [];
-
-      for (const t of pageData) {
-        const item = {};
-        for (const input of ["id", "type", "units", "amountPerUnit"]) {
-          item[input] = t[input];
-        }
-
-        item.date = new Date(t.date);
-        item.portfolio = this.portfolios.find(item => item.id == t.portfolioId).code;
-        item.currency = this.currencies.find(item => item.id == t.currencyId).code;
-        item.instrument = this.supportedInstruments.find(item => item.id == t.instrumentId).code;
-        //item.portfolio = this.portfolios.find(item => item.id == t.portfolioId).code;
-
-        items.push(item);
-      }
-
-      return items;
-    },
-    //
-    //
-    //
-    triggerClickEvent(targetId, event) {
+    validateModalForm(sourceId, event) {
       //reset before next check
       for (const prop in this.errorInfo) {
         this.errorInfo[prop] = null;
@@ -420,8 +395,7 @@ export default {
         event.preventDefault(); //only block ok click if validation issue
         return;
       }
-
-      if (targetId == "addButton") {
+      if (sourceId == "addButton") {
         this.add();
       } else {
         //TODO
@@ -441,7 +415,6 @@ export default {
         taxes: null,
         type: null,
         //
-
         portfolio: null,
         currency: null,
         instrument: null
@@ -456,7 +429,6 @@ export default {
 
       this.showEditDialog = false;
       this.showDeleteDialog = false;
-      this.selectedIndex = -1;
     },
     //
     //
@@ -477,20 +449,39 @@ export default {
           //
           portfolioId: t.portfolio.id,
           currencyId: t.currency.id,
-          instrumentId: t.instrument.id
+          instrumentId: t.instrument.id,
+          //so that it can be added to the frontend transaction table
+          portfolioCode: t.portfolio.code,
+          currencyCode: t.currency.code,
+          instrumentCode: t.instrument.code
         };
         const requestInfo = {
           data: d,
-          url: `/api/transactions/${this.user.userId}`,
-          list: "transactions"
+          url: `/api/transactions/${this.user.userId}`
+          //list: "transactions"
         };
-        this.addAction(requestInfo);
-        this.cancelDialog();
+        this.addAction(requestInfo).then(addedResponseObject => {
+          const item = {};
+          for (const input of [ "type", "units", "amountPerUnit", "fees", "taxes"]) {
+            item[input] = d[input];
+          }
+
+          item["id"] = addedResponseObject.data.id;
+
+          item.date = new Date(addedResponseObject.data.date);
+          //the following text attributes are helpful/needed in table filtering, hence they are used
+          item.portfolioCode = t.portfolio.code;
+          item.currencyCode = t.currency.code;
+          item.instrumentCode = t.instrument.code;
+          //
+          this.setAddedObject({data: item, list: "transactions"});
+          this.cancelDialog();
+          this.$refs.ttable.refresh();
+        });
       } else {
         this.cancelDialog();
         this.$router.push("/");
       }
-      console.log("Called Add");
     },
     // //
     // //
@@ -514,19 +505,21 @@ export default {
             this.ensureAuthorized().then(function() {
               if (thisInstanceReference.authenticated == true) {
                 let parameter = null;
+                const selectedIndexes = [];
                 for (const t of thisInstanceReference.selectedRows) {
                   if (parameter == null) {
                     parameter = t.id;
                   } else {
                     parameter = `${parameter},${t.id}`;
                   }
+                  selectedIndexes.push(thisInstanceReference.transactions.indexOf(t));
                 }
                 const requestInfo = {
                   url: `/api/transactions/${thisInstanceReference.user.userId}/${parameter}`,
-                  //list: "transactions",
-                  replace: true
+                  list: "transactions",
+                  indexes: selectedIndexes
                 };
-                thisInstanceReference.deletesAction(requestInfo).then(function(response) {
+                thisInstanceReference.deleteAction(requestInfo).then(function(response) {
                   console.log(`Multiple gets response: ${response}`);
                 });
               } else {
@@ -544,41 +537,44 @@ export default {
     showEditDialogLauncher(isDelete) {
       console.log(`Calling Edit ${isDelete}`);
     }
-  },
-  mounted() {
-    if (!this.isBasicDataGotten) {
-      const thisInstanceReference = this;
-      //will updated authenticated state
-      this.ensureAuthorized().then(function() {
-        if (thisInstanceReference.authenticated == true) {
-          const requestInfo = {
-            url: `/api/transactions/${thisInstanceReference.user.userId}`,
-            //list: "transactions",
-            replace: true
-          };
-          thisInstanceReference.getAction(requestInfo).then(function(response) {
-            for (const t of response) {
-              const item = {};
-              for (const input of ["id", "type", "units", "amountPerUnit"]) {
-                item[input] = t[input];
-              }
-
-              item.date = new Date(t.date);
-              item.portfolio = thisInstanceReference.portfolios.find(item => item.id == t.portfolioId).code;
-              item.currency = thisInstanceReference.currencies.find(item => item.id == t.currencyId).code;
-              item.instrument = thisInstanceReference.supportedInstruments.find(item => item.id == t.instrumentId).code;
-              //item.portfolio = this.portfolios.find(item => item.id == t.portfolioId).code;
-
-              thisInstanceReference.transactions.push(item);
-            }
-            thisInstanceReference.totalRows = thisInstanceReference.transactions.length;
-          });
-        } else {
-          thisInstanceReference.$router.push("/");
-        }
-      });
-    }
   }
+  // created() {
+  //   if (this.transactions.length == 0) {
+  //     const thisInstanceReference = this;
+  //     //will updated authenticated state
+  //     this.ensureAuthorized().then(function() {
+  //       if (thisInstanceReference.authenticated == true) {
+
+  //         const requestInfo = {
+  //           url: `/api/transactions/${thisInstanceReference.user.userId}`,
+  //           //list: "transactions",
+  //           replace: true,
+  //           mapper: mapperFunction
+  //         };
+
+  //         thisInstanceReference.getAction(requestInfo).then(function(response) {
+  //           for (const t of response) {
+  //             const item = {};
+  //             for (const input of ["id", "type", "units", "amountPerUnit"]) {
+  //               item[input] = t[input];
+  //             }
+
+  //             item.date = new Date(t.date);
+  //             item.portfolio = thisInstanceReference.portfolios.find(item => item.id == t.portfolioId);
+  //             item.currency = thisInstanceReference.currencies.find(item => item.id == t.currencyId);
+  //             item.instrument = thisInstanceReference.supportedInstruments.find(item => item.id == t.instrumentId);
+  //             //item.portfolio = this.portfolios.find(item => item.id == t.portfolioId).code;
+  //             //
+  //             thisInstanceReference.transactions.push(item);
+  //           }
+  //           thisInstanceReference.totalRows = thisInstanceReference.transactions.length;
+  //         });
+  //       } else {
+  //         thisInstanceReference.$router.push("/");
+  //       }
+  //     });
+  //   }
+  // }
 };
 </script>
 
