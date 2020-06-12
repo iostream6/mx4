@@ -258,7 +258,6 @@ public class PortfolioService {
             if (portfolioUserOptional.isPresent() && portfolioUserOptional.get().isWrite()) {
                 transactionRepository.deleteById(tid);
             }
-
         }
     }
 

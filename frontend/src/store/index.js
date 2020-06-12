@@ -7,6 +7,7 @@
  * 2020.06.07  - Introduced centralized getAction method which knows how to READ/get stuff from server with optional injection into shared state
  *               Transactions now retrieved via getAction 
  * 2020.06.08  - Transaction retrieval now merged with basic data retrieval and placed in shared state
+ * 2020.06.12  - Fixed delete transaction frontend state update - only entries with the right indices are now removed by starting from back to front
  */
 
 import Vue from 'vue'
@@ -143,10 +144,12 @@ export default new Vuex.Store({
       if (objectInfo.index != null && objectInfo.length != null) {
         list.splice(objectInfo.index, objectInfo.length);
       }
-      //used to specify a list of objects, by their indexes
+      //used to specify a list of objects, by their indexes, indexes should be in order
+      // as delete is back to front to preserve for earlier indexes so that delete is accurate
       if (objectInfo.indexes != null) {
-        for (const i of objectInfo.indexes) {
-          list.splice(i, 1);
+        let i = objectInfo.indexes.length - 1;
+        for (; i > -1; i--) {
+          list.splice(objectInfo.indexes[i], 1);
         }
       }
     },

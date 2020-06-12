@@ -3,6 +3,7 @@
 ***  2020.06.05  - Implemented add and basic list functionality
 ***  2020.06.07  - Switched to bootstrap-vue table. Implemented transaction list, filter/sort/pagination support
 ***  2020.06.10  - Improved add transaction implementation. Now uses transaction model in app state
+***  2020.06.11  - Implemented edit transaction, using the add transaction harness/forms.
 -->
 <template>
   <div id="layoutSidenav_content">
@@ -16,17 +17,17 @@
             <div class="col-lg-5">
               <b-form inline>
                 <b-input-group class="ml-4">
-                  <b-form-input v-model="filter" type="search" id="filterInput" placeholder="Type to Search"></b-form-input>
+                  <b-form-input v-model="tableProps.filter" type="search" id="filterInput" placeholder="Type to Search"></b-form-input>
                   <b-input-group-append>
-                    <b-button :disabled="!filter" @click="filter = ''">Clear</b-button>
+                    <b-button :disabled="!tableProps.filter" @click="filter = ''">Clear</b-button>
                   </b-input-group-append>
                 </b-input-group>
 
                 <b-button-group class="ml-3">
-                  <b-button variant="primary" v-b-modal.add-modal>
+                  <b-button variant="primary" v-b-modal.t-modal>
                     <font-awesome-icon :icon="['fas', 'plus-square']" />
                   </b-button>
-                  <b-button :variant="selectedRows.length != 1 ? 'secondary' : 'primary'" :disabled="selectedRows.length != 1" @click.prevent="showEditDialogLauncher(false)">
+                  <b-button :variant="selectedRows.length != 1 ? 'secondary' : 'primary'" :disabled="selectedRows.length != 1" @click.prevent="prepareEditDialog();$bvModal.show('t-modal')">
                     <font-awesome-icon :icon="['fas', 'edit']" />
                   </b-button>
                   <b-button :variant="selectedRows.length == 0 ? 'secondary' : 'primary'" :disabled="selectedRows.length == 0 " @click="deleteTransactions()">
@@ -44,25 +45,25 @@
             <div class="col-lg-12">
               <b-table
                 ref="ttable"
-                :striped="striped"
-                :bordered="bordered"
-                :borderless="borderless"
-                :outlined="outlined"
-                :selectable="selectable"
-                :small="small"
-                :hover="hover"
-                :dark="dark"
-                :fixed="fixed"
+                :striped="tableProps.striped"
+                :bordered="tableProps.bordered"
+                :borderless="tableProps.borderless"
+                :outlined="tableProps.outlined"
+                :selectable="tableProps.selectable"
+                :small="tableProps.small"
+                :hover="tableProps.hover"
+                :dark="tableProps.dark"
+                :fixed="tableProps.fixed"
                 :items="transactions"
                 :fields="tableFields"
-                :thead-tr-class="headerRowClass"
-                :sort-by="sortBy"
-                :sort-desc="sortDesc"
-                :primary-key="primaryKey"
-                :filter="filter"
-                :filterIncludedFields="filterOn"
-                :current-page="currentPage"
-                :per-page="perPage"
+                :thead-tr-class="tableProps.headerRowClass"
+                :sort-by="tableProps.sortBy"
+                :sort-desc="tableProps.sortDesc"
+                :primary-key="tableProps.primaryKey"
+                :filter="tableProps.filter"
+                :filterIncludedFields="tableProps.filterOn"
+                :current-page="tableProps.currentPage"
+                :per-page="tableProps.perPage"
                 @row-selected="onRowSelected"
               ></b-table>
             </div>
@@ -70,89 +71,19 @@
 
           <div class="row">
             <div class="col-lg-12">
-              <b-pagination v-model="currentPage" :total-rows="transactions.length" :per-page="perPage" align="fill" size="sm" class="my-0"></b-pagination>
+              <b-pagination v-model="tableProps.currentPage" :total-rows="transactions.length" :per-page="tableProps.perPage" align="fill" size="sm" class="my-0"></b-pagination>
             </div>
           </div>
-
-          <!-- 
-
-          <div class="row">
-            <div class="col-lg-12">
-              <table class="table table-bordered table-striped">
-                <! - -<colgroup>
-                  <col span="1" style="width: 10%;" />
-                  <col span="1" style="width: 10%;" />
-                  <col span="1" style="width: 8%;" />
-                  <col span="1" style="width: 6%;" />
-                  <col span="1" style="width: 17%;" />
-                  <col span="1" style="width: 6%;" />
-                </colgroup> - - >
-                <thead>
-                  <tr class="bg-primary text-light">
-                    <th class="text-center">
-                      <font-awesome-icon :icon="['fas', 'calendar-alt']" />
-                    </th>
-                    <th class="text-center">
-                      <font-awesome-icon :icon="['fas', 'briefcase']" />
-                    </th>
-                    <th class="text-center">
-                      <font-awesome-icon :icon="['fas', 'chess-pawn']" />
-                    </th>
-                    <th class="text-center">
-                      <font-awesome-icon :icon="['fas', 'chess']" />
-                    </th>
-                    <th class="text-center">
-                      <font-awesome-icon :icon="['fas', 'hryvnia']" />
-                    </th>
-                    <th class="text-center">
-                      <font-awesome-icon :icon="['fas', 'coins']" />
-                    </th>
-                    <th class="text-center">
-                      <font-awesome-icon :icon="['fas', 'font']" />
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <! - -
-                  <tr v-for="(t, index) in transactions" v-bind:key="index">
-                    <td>{{t.date}}</td>
-                    <td>{{portfolios.find(item => item.id == t.portfolioId).code}}</td>
-                    <td>{{supportedInstruments.find(item => item.id == t.instrumentId).code}}</td>
-                    <td>{{t.type}}</td>
-                    <td>{{currencies.find(item => item.id == t.currencyId).code}}</td>
-                    <td>{{t.units}}</td>
-                    <! - - <td class="text-left">{{sectors.find(item => item.id == i.sectorId ).name}}</td> - ->
-                    <td>
-                      <a href="#" class="text-success" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(false)">
-                        <font-awesome-icon :icon="['fas', 'edit']" />
-                      </a> &nbsp; &nbsp; &nbsp; &nbsp;
-                      <! - - Call a function that first makes a safe copy before it launches the dialog - ->
-                      <a href="#" class="text-danger" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(true)">
-                        <font-awesome-icon :icon="['fas', 'trash-alt']" />
-                      </a>
-                    </td>
-                  </tr>
-                  - - >
-                </tbody>
-              </table>
-            </div>
-          </div>-->
-
-          <!-- -->
         </div>
       </main>
     </div>
 
-    <!-- ADD TRANSACTION MODAL -->
+    <!-- ADD/EDIT TRANSACTION MODAL  -->
     <div>
-      <b-modal id="add-modal" @ok="validateModalForm('addButton', $event)" @hidden="cancelDialog()" centered title="Add New Transaction">
+      <b-modal id="t-modal" @ok="validateModalForm($event)" @hidden="cancelDialog()" centered v-bind:title="transaction.id == null ? 'Add New Transaction'  : 'Edit Transaction'">
         <form>
-          <!-- @reset="onReset"-->
-          <!--<b-form-group label="Date:" label-for="newTransactionDatex">
-            <b-form-input type="date" id="newTransactionDatex" v-model="newTransaction.taxes" class="mb-2" required></b-form-input>
-          </b-form-group>-->
-          <b-form-group label="Date:" label-for="newTransactionDate" :invalid-feedback="errorInfo['date']" :state="errorInfo['is-date']">
-            <b-form-datepicker id="newTransactionDate" v-model="transaction.date" class="mb-2"></b-form-datepicker>
+          <b-form-group label="Date:" label-for="transactionDate" :invalid-feedback="errorInfo['date']" :state="errorInfo['is-date']">
+            <b-form-datepicker id="transactionDate" v-model="transaction.date" class="mb-2"></b-form-datepicker>
           </b-form-group>
           <div class="row">
             <div class="form-group col-md-6 text-left">
@@ -211,8 +142,6 @@
         </form>
       </b-modal>
     </div>
-
-    <!-- EDIT TRANSACTION MODAL  -->
   </div>
 </template>
 
@@ -246,7 +175,7 @@ export default {
         currency: null,
         instrument: null
       },
-      headerRowClass: "bg-primary text-light",
+
       errorInfo: {
         date: null,
         portfolio: null,
@@ -312,27 +241,29 @@ export default {
           //sortable: true
         }
       ],
-
-      //additional table props
-      primaryKey: "id",
-      striped: false,
-      bordered: false,
-      borderless: false,
-      outlined: true,
-      small: true,
-      hover: false,
-      dark: false,
-      fixed: true,
-      selectable: true,
-      sortBy: "date",
-      sortDesc: false,
-      filter: null,
-      filterOn: [],
       showDeleteDialog: false,
       selectedRows: [],
-      currentPage: 1,
-      perPage: 30,
-      pageOptions: [10, 20, 30, 50]
+      //additional table props
+      tableProps: {
+        primaryKey: "id",
+        striped: false,
+        bordered: false,
+        borderless: false,
+        outlined: true,
+        small: true,
+        hover: false,
+        dark: false,
+        fixed: true,
+        selectable: true,
+        sortBy: "date",
+        sortDesc: false,
+        filter: null,
+        filterOn: [],
+        headerRowClass: "bg-primary text-light",
+        currentPage: 1,
+        perPage: 30,
+        pageOptions: [10, 20, 30, 50]
+      }
     };
   },
   computed: {
@@ -346,11 +277,10 @@ export default {
       ensureAuthorized: "ensureAuthorized",
       addAction: "addAction",
       getAction: "getAction",
-      deleteAction: "deleteAction"
-      //editAction: "editInstrumentAction",
-      //deleteAction: "deleteInstrumentAction"
+      deleteAction: "deleteAction",
+      editAction: "editAction"
     }),
-    ...mapMutations({setAddedObject: "setAddedObject"}),
+    ...mapMutations({ setAddedObject: "setAddedObject", setEditedObject: "setEditedObject" }),
     //
     onRowSelected(items) {
       this.selectedRows = items;
@@ -358,13 +288,12 @@ export default {
     //
     //
     //
-    validateModalForm(sourceId, event) {
+    validateModalForm(event) {
       //reset before next check
       for (const prop in this.errorInfo) {
         this.errorInfo[prop] = null;
       }
       this.errorInfo["is-valid"] = true;
-
       // manual validation (datepicker does not work with native browser validation)
       const inputs = ["date", "portfolio", "instrument", "type", "currency", "units", "amountPerUnit"];
       for (const input of inputs) {
@@ -380,7 +309,6 @@ export default {
       for (const input of ["units", "amountPerUnit", "fees", "taxes"]) {
         if (this.transaction[input] != null) {
           if (/^\d+(\.\d+)?/.test(this.transaction[input]) == false) {
-            console.log(`Inside regex match ${input}`);
             this.errorInfo[input] = `Enter valid ${input}`;
             this.errorInfo[`is-${input}`] = false;
             this.errorInfo["is-valid"] = false;
@@ -395,13 +323,11 @@ export default {
         event.preventDefault(); //only block ok click if validation issue
         return;
       }
-      if (sourceId == "addButton") {
-        this.add();
+      if (this.transaction.id == null) {
+        this.addTransaction();
       } else {
-        //TODO
+        this.editTransaction();
       }
-
-      //document.getElementById(targetId).click();
     },
     //
     //
@@ -433,7 +359,53 @@ export default {
     //
     //
     //
-    async add() {
+    async addTransaction() {
+      //e.preventDefault() - already blocked with modifier
+      await this.ensureAuthorized(); //will updated authenticated state
+      if (this.authenticated == true) {
+        const t = this.transaction;
+        let d = {
+          date: t.date,
+          units: t.units,
+          amountPerUnit: t.amountPerUnit,
+          fees: t.fees,
+          taxes: t.taxes,
+          type: t.type,
+          //
+          //
+          portfolioId: t.portfolio.id,
+          currencyId: t.currency.id,
+          instrumentId: t.instrument.id
+        };
+        const requestInfo = {
+          data: d,
+          url: `/api/transactions/${this.user.userId}`
+          //list: "transactions"
+        };
+        this.addAction(requestInfo).then(addedResponseObject => {
+          const item = {};
+          for (const input of ["type", "units", "amountPerUnit", "fees", "taxes"]) {
+            item[input] = d[input];
+          }
+
+          item["id"] = addedResponseObject.data.id;
+
+          item.date = new Date(addedResponseObject.data.date);
+          //the following text attributes are helpful/needed in table filtering, hence they are used
+          item.portfolioCode = t.portfolio.code;
+          item.currencyCode = t.currency.code;
+          item.instrumentCode = t.instrument.code;
+          //
+          this.setAddedObject({ data: item, list: "transactions" });
+          this.cancelDialog();
+          this.$refs.ttable.refresh();
+        });
+      } else {
+        this.cancelDialog();
+        this.$router.push("/");
+      }
+    },
+    async editTransaction() {
       //e.preventDefault() - already blocked with modifier
       await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
@@ -450,34 +422,31 @@ export default {
           portfolioId: t.portfolio.id,
           currencyId: t.currency.id,
           instrumentId: t.instrument.id,
-          //so that it can be added to the frontend transaction table
-          portfolioCode: t.portfolio.code,
-          currencyCode: t.currency.code,
-          instrumentCode: t.instrument.code
+          id: t.id
         };
         const requestInfo = {
           data: d,
-          url: `/api/transactions/${this.user.userId}`
-          //list: "transactions"
+          url: `/api/transaction/${this.user.userId}/${d.id}`
+          //list: "transactions",
+          //index: this.transactions.indexOf(t)
         };
-        this.addAction(requestInfo).then(addedResponseObject => {
+        const result = await this.editAction(requestInfo);
+        if (result == true) {
+          //update the table with saved data
           const item = {};
-          for (const input of [ "type", "units", "amountPerUnit", "fees", "taxes"]) {
-            item[input] = d[input];
+          for (const input of ["id", "type", "units", "amountPerUnit", "fees", "taxes"]) {
+            item[input] = t[input];
           }
-
-          item["id"] = addedResponseObject.data.id;
-
-          item.date = new Date(addedResponseObject.data.date);
+          item.date = new Date(t.date);
           //the following text attributes are helpful/needed in table filtering, hence they are used
           item.portfolioCode = t.portfolio.code;
           item.currencyCode = t.currency.code;
           item.instrumentCode = t.instrument.code;
           //
-          this.setAddedObject({data: item, list: "transactions"});
+          this.setEditedObject({ data: item, list: "transactions", index: this.transactions.findIndex(item => item.id == t.id) });
           this.cancelDialog();
           this.$refs.ttable.refresh();
-        });
+        }
       } else {
         this.cancelDialog();
         this.$router.push("/");
@@ -534,8 +503,18 @@ export default {
     // //
     // //
     // //
-    showEditDialogLauncher(isDelete) {
-      console.log(`Calling Edit ${isDelete}`);
+    prepareEditDialog() {
+      console.log(`Calling Edit`);
+      // let parameter = null;
+      const selectedTransaction = this.selectedRows[0];
+      const se = this.transaction;
+      for (const input of ["id", "date", "type", "units", "amountPerUnit", "fees", "taxes"]) {
+        se[input] = selectedTransaction[input];
+      }
+      //
+      se.portfolio = this.portfolios.find(item => item.code == selectedTransaction.portfolioCode);
+      se.currency = this.currencies.find(item => item.code == selectedTransaction.currencyCode);
+      se.instrument = this.supportedInstruments.find(item => item.code == selectedTransaction.instrumentCode);
     }
   }
   // created() {
