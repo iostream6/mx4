@@ -3,13 +3,14 @@
 ***  2020.05.27  - Updated to use more compact centralized authorization checks
 ***  2020.05.28  - Improved implementation (based on Entities.vue), removing need for extra  attribute mapping fields
 ***  2020.05.30  - Use FA 5.0  and simplified/centralised add/edit/delete actions for domain objects
+
+TODO : remove modals and streamline like transactions.vue
 -->
 <template>
   <div id="layoutSidenav_content">
     <div>
       <main>
         <div class="container-fluid">
-          <div class="row"></div>
           <div class="row mt-3">
             <div class="col-lg-9">
               <h3 class="text-primary float-left">Portfolios</h3>

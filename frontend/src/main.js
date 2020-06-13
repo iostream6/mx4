@@ -60,7 +60,7 @@ import { faSignInAlt, faUserPlus, faAngleLeft, faAngleDown, faTachometerAlt, faC
   faColumns, faBookOpen, faPlusSquare, faEdit,faTrashAlt, faCalendarAlt, faBriefcase, faHryvnia, faCoins,
   faChess, faChessPawn, faFont /* for actions table column */, 
   /* transaction types */ faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
-/* AppNavBar */ faUser } from '@fortawesome/free-solid-svg-icons'
+/* AppNavBar */ faUser, faAngleRight } from '@fortawesome/free-solid-svg-icons'
 //alternatively, import all solid icons
 //import solid from "@fortawesome/fontawesome-free-solid";
 
@@ -79,7 +79,7 @@ library.add(faSignInAlt, faUserPlus, faAngleLeft, faAngleDown, faTachometerAlt, 
   faColumns, faBookOpen, faPlusSquare, faEdit,faTrashAlt, faCalendarAlt, faBriefcase, faHryvnia, faCoins,
   faChess, faChessPawn, faFont /* for actions table column */,
   /* transaction types */ faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
-  faUser)
+  faUser, faAngleRight)
 // you can also do library.add(solid) if you imported the entire style icons set above
 
 Vue.component('font-awesome-icon', FontAwesomeIcon)

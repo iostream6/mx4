@@ -12,7 +12,7 @@
         <b-nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
           <div class="sb-sidenav-menu">
             <div class="nav">
-              <b-link class="nav-link" href="#">
+              <b-link class="nav-link" href="#" v-on:click="activeComponent='dashboard'">
                 <div class="sb-nav-link-icon">
                   <font-awesome-icon :icon="['fas', 'tachometer-alt']" />
                 </div>Dashboard
