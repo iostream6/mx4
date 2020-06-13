@@ -16,8 +16,8 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 //https://stackoverflow.com/questions/30880927/spring-boot-extending-crudrepository
 public interface ExchangeRepository extends MongoRepository<Exchange, String> {
 
-    public Optional<Exchange> findByFromIDAndToID(long fromID, long toID);
+    public Optional<Exchange> findByFromIdAndToId(long fromId, long toId);
 
-    public List<Exchange> findByFromID(long fromID);
+    public List<Exchange> findByFromId(long fromId);
 
 }

@@ -1,12 +1,16 @@
-/*
+/**
  * 2020.04.03  - Created
+ * 2020.06.13  - Fixed issue with exchangeratesapi.io not providing datestamp. Fixed issue with fractionals exchange rates not available from providers.
+ *
  */
 package mx4.springboot.services.spi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import mx4.springboot.model.Currency;
@@ -24,6 +28,7 @@ public class APIExchangeRateServiceProvider implements ExchangeRateServiceProvid
 //"https://api.exchangeratesapi.io/latest?";
 //https://api.exchangeratesapi.io/history?base=EUR&start_at=2020-04-02&end_at=2020-04-02&symbols=USD,GBP,EUR
 //https://api.exchangeratesapi.io/latest?base=GBP
+
     private final static String REQUEST_URL_TEMPLATE = "https://api.exchangeratesapi.io/latest?base=%s", METHOD = "GET";
     private static final String UA = "User-Agent", ACCEPT_CHARSET = "Accept-Charset", UA_VALUE = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36";
 
@@ -33,12 +38,10 @@ public class APIExchangeRateServiceProvider implements ExchangeRateServiceProvid
     public List<Exchange> fetchExchangeRates(List<Currency> currencies) {
         final List<Exchange> exchanges = new ArrayList<>();
         for (Currency c : currencies) {
-            if (c.getCode().length() == 3) {
+            if (c.getCode().endsWith("X") == false) {
                 HttpURLConnection con = null;
                 try {
-                    
-                    // Another option is to use RestTemplates from Spring
-                    
+                    // Another option is to use RestTemplates from Spring                   
                     final String url = String.format(REQUEST_URL_TEMPLATE, c.getCode());
                     URL myurl = new URL(url);
                     con = (HttpURLConnection) myurl.openConnection();
@@ -50,41 +53,61 @@ public class APIExchangeRateServiceProvider implements ExchangeRateServiceProvid
                         ObjectMapper mapper = new ObjectMapper();
                         FixerExchangeInfo exchangeInfo = mapper.readValue(con.getInputStream(), FixerExchangeInfo.class);
                         if (exchangeInfo.getRates().isEmpty() == false) {
-                            currencies.stream().filter(cc -> /*cc.getId() != c.getId() &&*/ cc.getCode().length() == 3).forEach(ccc -> {
+                            if (exchangeInfo.getTimestamp() == 0 && exchangeInfo.getDate() != null) {
+                                //https://api.exchangeratesapi.io/latest does not have timestamp unlike fixer.oi
+                                final Date date = (new SimpleDateFormat("yyy-MM-dd")).parse(exchangeInfo.getDate());
+                                exchangeInfo.setTimestamp(date.getTime());
+                            }
+                            currencies.stream().forEach(ccc -> {
                                 Double forwardRate = exchangeInfo.getRates().get(ccc.getCode());
                                 if (forwardRate != null) {
+                                    final long toFractionalId = ccc.getId() + 1;
                                     Exchange ex = new Exchange();
                                     ex.setDatestamp(exchangeInfo.getTimestamp());
-                                    ex.setFromID(c.getId());
-                                    ex.setToID(ccc.getId());
+                                    ex.setFromId(c.getId());
+                                    ex.setToId(ccc.getId());
                                     ex.setConverter(forwardRate);
                                     exchanges.add(ex);
                                     //
-                                    //fractionals
+                                    //toFractionals
                                     ex = new Exchange();
                                     ex.setDatestamp(exchangeInfo.getTimestamp());
-                                    ex.setFromID(c.getId());
-                                    ex.setToID(ccc.getId() + 1);
+                                    ex.setFromId(c.getId());
+                                    ex.setToId(toFractionalId);
                                     ex.setConverter(100 * forwardRate);
+                                    exchanges.add(ex);
+                                    
+                                    //resolve potential issue with fromFractional since typically not provided by third party API
+                                    final long fromFractionalId = c.getId() + 1;
+                                    ex = new Exchange();
+                                    ex.setDatestamp(exchangeInfo.getTimestamp());
+                                    ex.setFromId(fromFractionalId);
+                                    ex.setToId(ccc.getId());
+                                    ex.setConverter(forwardRate/100.0);
+                                    exchanges.add(ex);
+                                    //fromFractional
+                                    ex = new Exchange();
+                                    ex.setDatestamp(exchangeInfo.getTimestamp());
+                                    ex.setFromId(fromFractionalId);
+                                    ex.setToId(toFractionalId);
+                                    ex.setConverter(forwardRate);
                                     exchanges.add(ex);
                                 }
 
                             });
                         }
                     }
-
                 } catch (Exception e) {
                 } finally {
                     if (con != null) {
                         con.disconnect();
                     }
-
                 }
             }
         }
-
         return exchanges;
     }
+
     //
     //DTO that maps to exchangeratesapi.io "latest" results JSON :: {"rates":{"CAD": 1.4167430772,"HKD": 7.7521547772,"ISK": 142.3986796259, . . . "PLN": 4.1900788557},"base": "USD","date": "2020-04-02"}
     // very similar to Fixer.io JSON format except that "success" and timestamp are not present (Fixer.io :: {"success":true,"timestamp":1585904948,"base":"EUR","date":"2020-04-03","rates":{"USD":1.079436,"GBP":0.879541,"NGN":396.153627}}

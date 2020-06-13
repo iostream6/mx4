@@ -1,7 +1,8 @@
-/*
+/**
  * 2020.04.03  - Created | Base functionality QC'ed
  * 2020.05.01  - Path security QC'd
  * 2020.05.23  - Removed "readOne" and use ResponseEntity return values
+ * 2020.06.13  - All old exchange rates are deleted before new exchange rates are stored
  */
 package mx4.springboot.services;
 
@@ -45,9 +46,9 @@ public class CurrencyService {
     @GetMapping("/exchange/{from}/{to}")
     public ResponseEntity<?> convert(@PathVariable String from, @PathVariable String to) {
         try {
-            final long fromCurrencyID = Long.parseLong(from);
-            final long toCurrencyID = Long.parseLong(to);
-            final Optional<Exchange> xeOptional = exchangeRepository.findByFromIDAndToID(fromCurrencyID, toCurrencyID);
+            final long fromCurrencyId = Long.parseLong(from);
+            final long toCurrencyId = Long.parseLong(to);
+            final Optional<Exchange> xeOptional = exchangeRepository.findByFromIdAndToId(fromCurrencyId, toCurrencyId);
             if (xeOptional.isPresent()) {
                 ResponseEntity.ok(xeOptional.get());
             }
@@ -56,16 +57,23 @@ public class CurrencyService {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
-    @PutMapping("/exchanges")//TODO Please check
+    @GetMapping("/exchanges")
+    public List<Exchange> readExchangRates() {
+        return exchangeRepository.findAll();
+    }
+
+    @PutMapping("/exchanges")
     public List<Exchange> updateExchangRates() {
         ExchangeRateServiceProvider erp = Lookup.getDefault().lookup(ExchangeRateServiceProvider.class);
         if (erp != null) {
             final List<Exchange> exchanges = erp.fetchExchangeRates(currencyList);
-            exchangeRepository.saveAll(exchanges);
-            return exchanges;
-        } else {
-            return Collections.EMPTY_LIST;
+            if (exchanges.isEmpty() == false) {
+                exchangeRepository.deleteAll();
+                exchangeRepository.saveAll(exchanges);
+                return exchanges;
+            }
         }
+        return Collections.EMPTY_LIST;
     }
 
     //initialize all supported currencies as a singleton list

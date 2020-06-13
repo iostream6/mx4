@@ -65,9 +65,9 @@ public class Currency {
 
         private String id;//echange ID
         
-        private long fromID;
+        private long fromId;
 
-        private long toID;
+        private long toId;
 
         private double converter;
 
@@ -81,20 +81,20 @@ public class Currency {
             this.id = id;
         }
         
-        public long getFromID() {
-            return fromID;
+        public long getFromId() {
+            return fromId;
         }
 
-        public void setFromID(long fromID) {
-            this.fromID = fromID;
+        public void setFromId(long fromId) {
+            this.fromId = fromId;
         }
 
-        public long getToID() {
-            return toID;
+        public long getToId() {
+            return toId;
         }
 
-        public void setToID(long toID) {
-            this.toID = toID;
+        public void setToId(long toId) {
+            this.toId = toId;
         }
 
         public double getConverter() {
