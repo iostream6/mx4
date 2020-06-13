@@ -8,6 +8,7 @@
  *               Transactions now retrieved via getAction 
  * 2020.06.08  - Transaction retrieval now merged with basic data retrieval and placed in shared state
  * 2020.06.12  - Fixed delete transaction frontend state update - only entries with the right indices are now removed by starting from back to front
+ * 2020.06.13  - Added centralized state info for displayFormat and fx rates client download and usage.
  */
 
 import Vue from 'vue'
@@ -34,10 +35,10 @@ export default new Vuex.Store({
     brokers: [],
     portfolios: [],
     currencies: [],
+    fxr: [],
     transactions: [],
     isBasicDataGotten: false,
     isBasicAdminDataGotten: false,
-    isTransactionsGotten: false,
     isAdminUser: false,
     authenticated: false,
     transactionTypes: ['DIV', 'BUY', 'SELL'],
@@ -48,6 +49,10 @@ export default new Vuex.Store({
     { "code": "SPA", "name": "Spain" },
     { "code": "NGR", "name": "Nigeria" },
     { "code": "CHN", "name": "China" }],
+    displayFormats: [
+      { name: "UK", locale: "en-GB", baseCurrencyId: 1001103, currency: "GBP" },
+      { name: "US", locale: "en-US", baseCurrencyId: 1001101, currency: "USD" }],
+    formmaterIndex: 0,
     sectors: [],
     supportedInstruments: [],
   },
@@ -163,6 +168,7 @@ export default new Vuex.Store({
       state.sectors = data["sectors"];
       state.supportedInstruments = data["instruments"];
       state.transactions = data["transactions"];
+      state.fxr = data["fxr"],
       state.isBasicDataGotten = true;
     },
     // //
@@ -345,6 +351,14 @@ export default new Vuex.Store({
           results["instruments"] = axiosResponse.data;
         }
 
+        //exchange rates
+        axiosResponse = await context.getters.getAuthenticatedAxios.get(
+          `${context.state.server}/api/exchanges`
+        );
+        if (axiosResponse.status == 200) {
+          results["fxr"] = axiosResponse.data;
+        }
+
         //transactions
         axiosResponse = await context.getters.getAuthenticatedAxios.get(
           `${context.state.server}/api/transactions/${context.state.user.userId}`
@@ -367,7 +381,7 @@ export default new Vuex.Store({
         }
 
         if (results["brokers"] && results["portfolios"] && results["currencies"] && results["sectors"] && results["entities"]
-          && results["instruments"] && results["transactions"]) {
+          && results["instruments"] && results["fxr"] && results["transactions"]) {
           context.commit("setBasicData", results);
         }
       } catch (error) {
