@@ -87,10 +87,7 @@ public class Instrument {
     public void setSectorId(String sectorId) {
         this.sectorId = sectorId;
     }
-
-
     
-
     public String getCode() {
         return code;
     }
