@@ -4,9 +4,9 @@
 package mx4.springboot.services;
 
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -65,6 +65,20 @@ public class ValuesService {
     }
 
     /**
+     * Reads last date values record from the database
+     *
+     * @return all values record from the database
+     */
+    @GetMapping("/api/values/last")
+    public ResponseEntity<?> readLastValuesRecords() {
+        List<Values> vs = valuesRepository.findAll(Sort.by(Sort.Direction.DESC, "date"));
+        if (vs.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }        
+        return ResponseEntity.ok(vs.get(0));
+    }
+
+    /**
      * Updates a given values record
      *
      * @param vs the Values data model
@@ -106,8 +120,8 @@ public class ValuesService {
             valuesRepository.deleteById(vid);
         }
     }
-
-    /**
+   
+   /**
      * Creates multiple values records (from legacy JSON strings to allow easy migration
      *
      * @param data
@@ -117,14 +131,15 @@ public class ValuesService {
     @PostMapping("/admin/v2/values")
     public List<Values> createValuesRecordsLegacy(@RequestBody String data) throws Exception {
         final int DATE_INDEX = 0, CODE_INDEX = 1, VALUE_INDEX = 2;
-        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        //final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         final DecimalFormat nf = new DecimalFormat("#0.00##");
         final Scanner lineScanner = new Scanner(data);
         final List<Instrument> instruments = instrumentRepository.findAll();
-        Map<Date, Set<Values.Record>> m = new HashMap<>();
+        Map<LocalDate, Set<Values.Record>> m = new HashMap<>();
         while (lineScanner.hasNextLine()) {
             final String[] lineData = lineScanner.nextLine().split("\t");
-            final Date d = sdf.parse(lineData[DATE_INDEX]);
+            final LocalDate d = LocalDate.parse(lineData[DATE_INDEX], dtf);
             Set<Values.Record> records = m.get(d);
             if (records == null) {
                 records = new HashSet<>();
@@ -141,7 +156,7 @@ public class ValuesService {
             }
         }
         final List<Values> vs = new ArrayList<>();
-        for (final Date d : m.keySet()) {
+        for (final LocalDate d : m.keySet()) {
             final Set<Values.Record> records = m.get(d);
             final Values v = new Values();
             v.setDate(d);

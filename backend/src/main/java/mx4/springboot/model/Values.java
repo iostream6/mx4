@@ -1,9 +1,10 @@
 /*
  * 2020.06.17 - Created
+ * 2020.06.29 - Switch to LocalDate rather dates
  */
 package mx4.springboot.model;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.Set;
 
 /**
@@ -14,15 +15,15 @@ import java.util.Set;
  */
 public class Values {
 
-    private Date date;
+    private LocalDate date;
     private String id;
     private Set<Record> records;
 
-    public Date getDate() {
+    public LocalDate getDate() {
         return date;
     }
 
-    public void setDate(Date date) {
+    public void setDate(LocalDate date) {
         this.date = date;
     }
 
