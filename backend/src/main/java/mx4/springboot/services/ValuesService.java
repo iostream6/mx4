@@ -1,5 +1,6 @@
 /*
  * 2020.06.17 - Created
+ * 2020.07.01 - Fixed - createValuesRecordsLegacy now skips and logs unrecognized instrument symbols. readLastValuesRecords now returns HTTP/OK even if no record found
  */
 package mx4.springboot.services;
 
@@ -73,7 +74,8 @@ public class ValuesService {
     public ResponseEntity<?> readLastValuesRecords() {
         List<Values> vs = valuesRepository.findAll(Sort.by(Sort.Direction.DESC, "date"));
         if (vs.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.ok().build();
+            //return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }        
         return ResponseEntity.ok(vs.get(0));
     }
@@ -145,14 +147,20 @@ public class ValuesService {
                 records = new HashSet<>();
                 m.put(d, records);
             }
+            boolean found = false;
             for (Instrument i : instruments) {
                 if (i.getCode().equals(lineData[CODE_INDEX])) {
                     final Values.Record record = new Values.Record();
                     record.setValue(nf.parse(lineData[VALUE_INDEX]).doubleValue());
                     record.setInstrumentId(i.getId());
                     records.add(record);
+                    found = true;
+                    System.out.println("OK " + lineData[CODE_INDEX]);
                     break;
                 }
+            }
+            if(!found){
+                System.out.println("Could not find " + lineData[CODE_INDEX]);
             }
         }
         final List<Values> vs = new ArrayList<>();
