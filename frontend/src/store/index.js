@@ -9,6 +9,7 @@
  * 2020.06.08  - Transaction retrieval now merged with basic data retrieval and placed in shared state
  * 2020.06.12  - Fixed delete transaction frontend state update - only entries with the right indices are now removed by starting from back to front
  * 2020.06.13  - Added centralized state info for displayFormat and fx rates client download and usage.
+ * 2020.06.29  - Added centralized Values data download
  */
 
 import Vue from 'vue'
@@ -37,6 +38,7 @@ export default new Vuex.Store({
     currencies: [],
     fxr: [],
     transactions: [],
+    values: [],
     isBasicDataGotten: false,
     isBasicAdminDataGotten: false,
     isAdminUser: false,
@@ -169,6 +171,7 @@ export default new Vuex.Store({
       state.supportedInstruments = data["instruments"];
       state.transactions = data["transactions"];
       state.fxr = data["fxr"],
+      state.values = data["values"],
       state.isBasicDataGotten = true;
     },
     // //
@@ -380,8 +383,16 @@ export default new Vuex.Store({
           }
         }
 
+        //instrument values
+        axiosResponse = await context.getters.getAuthenticatedAxios.get(
+          `${context.state.server}/api/values/last`
+        );
+        if (axiosResponse.status == 200) {
+          results["values"] = axiosResponse.data;
+        }
+
         if (results["brokers"] && results["portfolios"] && results["currencies"] && results["sectors"] && results["entities"]
-          && results["instruments"] && results["fxr"] && results["transactions"]) {
+          && results["instruments"] && results["fxr"] && results["transactions"] && results["values"]) {
           context.commit("setBasicData", results);
         }
       } catch (error) {
