@@ -2,6 +2,7 @@
 ***  2020.06.05 Now uses centralized functions for enforcing/restoring authourization
 ***  2020.06.13 Implemented display of dividend per instrument
 ***  2020.06.17 Implemented display dividend timeline chart
+***  2020.07.01 Implemented instrument/portfolio/currency valuation barcharts
 -->
 
 <template>
@@ -25,7 +26,7 @@
                 </div>
               </div>
               <div class="card-body">
-                <h1>{{portfolioValue}}</h1>
+                <h1>{{valuations.portfoliosTotalValue}}</h1>
               </div>
             </div>
           </div>
@@ -70,20 +71,25 @@
           </div>
         </div>
         <!-- -->
-        <div class="row ml-2">
-          <div>
-            <line-chart :chartData="lineChartData"></line-chart>
+        <div class="chart-container mt-4 mb-4">
+          <bar-chart :chartData="instrumentHoldingsChartInfo.chartData" :options="instrumentHoldingsChartInfo.chartOptions"></bar-chart>
+        </div>
+        <hr />
+        <!-- -->
+        <div class="row">
+          <div class="col-xl-6 col-md-6">
+            <doughnut :chartData="portfolioHoldingsChartInfo.chartData" :options="portfolioHoldingsChartInfo.chartOptions"></doughnut>
           </div>
-          <div>
-            <doughnut :chartData="doughnutChartData"></doughnut>
+          <div class="col-xl-6 col-md-6">
+            <doughnut :chartData="currencyHoldingsChartInfo.chartData" :options="currencyHoldingsChartInfo.chartOptions"></doughnut>
           </div>
         </div>
-
+        <hr />
         <!-- -->
         <div class="chart-container mt-4 mb-4">
           <bar-chart :chartData="instrumentDividendsChartInfo.chartData" :options="instrumentDividendsChartInfo.chartOptions"></bar-chart>
         </div>
-
+        <hr />
         <!-- -->
 
         <div class="chart-container mt-4 mb-4">
@@ -111,10 +117,7 @@ export default {
   name: "Dashboard",
   components: { LineChart, Doughnut, BarChart },
   computed: {
-    ...mapState(["isBasicDataGotten", "authenticated", "transactions", "supportedInstruments", "fxr", "displayFormats", "formmaterIndex", "currencies"]),
-    portfolioValue() {
-      return 500000;
-    },
+    ...mapState(["isBasicDataGotten", "authenticated", "transactions", "supportedInstruments", "fxr", "values", "displayFormats", "formmaterIndex", "currencies", "portfolios"]),
     fx() {
       const baseCurrencyId = this.displayFormats[this.formmaterIndex].baseCurrencyId;
       const fx = {
@@ -126,187 +129,6 @@ export default {
         eux: this.fxr.find(item => item.fromId == 1001106 && item.toId == baseCurrencyId).converter
       };
       return fx;
-    },
-    instrumentDividendsChartInfo() {
-      const labels = [];
-      const data = [];
-      let seriesLabel = null;
-
-      if (this.dividends.instrumentAccummulations.length > 0) {
-        const safeinstrumentAccummulations = this.dividends.instrumentAccummulations.slice();
-
-        switch (this.accumulatedDividendsRange) {
-          case 0:
-            seriesLabel = "Dividend (YTD)";
-            safeinstrumentAccummulations.sort(function(a, b) {
-              return a.ytd - b.ytd;
-            });
-            for (const iDivValues of this.dividends.instrumentAccummulations) {
-              if (iDivValues.ytd > 0) {
-                labels.push(iDivValues.code);
-                data.push(iDivValues.ytd);
-              }
-            }
-            break;
-          case 1:
-            seriesLabel = "Dividend (TTM)";
-            safeinstrumentAccummulations.sort(function(a, b) {
-              return a.ttm - b.ttm;
-            });
-            for (const iDivValues of this.dividends.instrumentAccummulations) {
-              if (iDivValues.ttm > 0) {
-                labels.push(iDivValues.code);
-                data.push(iDivValues.ttm);
-              }
-            }
-            break;
-          case 2:
-            seriesLabel = "Dividend (5YRS)";
-            safeinstrumentAccummulations.sort(function(a, b) {
-              return a.l5y - b.l5y;
-            });
-            for (const iDivValues of this.dividends.instrumentAccummulations) {
-              if (iDivValues.l5y > 0) {
-                labels.push(iDivValues.code);
-                data.push(iDivValues.l5y);
-              }
-            }
-            break;
-          default:
-            seriesLabel = "Dividend (ALL)";
-            safeinstrumentAccummulations.sort(function(a, b) {
-              return a.all - b.all;
-            });
-            for (const iDivValues of safeinstrumentAccummulations) {
-              if (iDivValues.all > 0) {
-                labels.push(iDivValues.code);
-                data.push(iDivValues.all);
-              }
-            }
-        }
-      }
-
-      const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          xAxes: [
-            {
-              gridLines: {
-                drawOnChartArea: false
-              },
-              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
-            }
-          ],
-          yAxes: [
-            {
-              gridLines: {
-                drawOnChartArea: false
-                //lineWidth: 1.0, color: 'rgba(0,123,255, 0.15)'
-              },
-              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
-            }
-          ]
-        }
-        // tooltips: { //https://stackoverflow.com/questions/25880767/chart-js-number-format
-        //   callbacks: {
-        //     label: function(tooltipItem) {
-        //       return tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
-        //     }
-        //   }
-        // }
-      };
-
-      const result = {
-        chartData: {
-          labels: labels,
-          datasets: [
-            {
-              label: seriesLabel,
-              data: data,
-              backgroundColor: "rgba(0,123,255, 1.0)",
-              hoverBackgroundColor: "rgba(52,58,64, 0.5)"
-            }
-          ]
-        },
-        chartOptions: options
-      };
-
-      return result;
-    },
-    dividendTimelineChartInfo() {
-      const datasets = [];
-      console.log("Heading");
-
-      if (this.dividends.dividendTimelineData.quarterly.dates.length > 0) {
-        //let safeinstrumentAccummulations = this.dividends.instrumentAccummulations.slice();
-        console.log("Heading2");
-        let dataSource = null;
-        let shift = 0;
-        switch (this.timeIncrements) {
-          case 0:
-            dataSource = this.dividends.dividendTimelineData.monthly;
-            shift = 15 * 24 * 60 * 60 * 1000; //millis
-            break;
-          case 1:
-            dataSource = this.dividends.dividendTimelineData.quarterly;
-            shift = 45 * 24 * 60 * 60 * 1000; //millis
-            break;
-          case 2:
-            dataSource = this.dividends.dividendTimelineData.halfYearly;
-            shift = 90 * 24 * 60 * 60 * 1000; //millis
-            break;
-          default:
-            dataSource = this.dividends.dividendTimelineData.yearly;
-            shift = 180 * 24 * 60 * 60 * 1000; //millis
-        }
-
-        const midPeriodDates = [];
-        for (let i = 0; i < dataSource.dates.length; i++) {
-          const dd = dataSource.dates[i];
-          const dds = new Date(dd);
-          dds.setTime(dd.getTime() + shift);
-          midPeriodDates.push(dds);
-        }
-
-        datasets.push({ label: "EUR", data: this.getTimeSeriesDataset(midPeriodDates, dataSource.eur) });
-        datasets.push({backgroundColor: 'rgba(0,123,255, 1.0)', label: "USD", data: this.getTimeSeriesDataset(midPeriodDates, dataSource.usd) });
-        datasets.push({fill: '-1', backgroundColor: "rgba(220, 0, 0, 0.2)", label: "GBP", data: this.getTimeSeriesDataset(midPeriodDates, dataSource.gbp) });
-
-        // //round about way of stacking - chart.js
-        // const eurusd = dataSource.eur.map((e, i) => e + dataSource.usd[i]);
-        // const eurusdgbp = dataSource.eur.map((e, i) => e + dataSource.usd[i] + dataSource.gbp[i]);
-        // datasets.push({ backgroundColor: "rgba(0,123,255, 1.0)", label: "USD", data: this.getTimeSeriesDataset(midPeriodDates, eurusd) });
-        // datasets.push({ fill: "-1", backgroundColor: "rgba(220, 0, 0, 0.2)", label: "GBP", data: this.getTimeSeriesDataset(midPeriodDates, eurusdgbp) });
-      }
-//www.alphavantage.co  Welcome to Alpha Vantage! Your API key is: 3XJV7GG70EKZJ7DN. Please record this API key for future access to Alpha Vantage.
-      const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          xAxes: [
-            {
-              gridLines: {
-                drawOnChartArea: false
-              },
-              type: "time"
-              //ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
-            }
-          ],
-          yAxes: [
-            {
-              gridLines: {
-                drawOnChartArea: false
-                //lineWidth: 1.0, color: 'rgba(0,123,255, 0.15)'
-              },
-              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" },
-              stacked: true
-            }
-          ]
-        }
-      };
-
-      return { chartData: { datasets: datasets }, chartOptions: options };
     },
     dividends() {
       const instrumentDivValues = [];
@@ -329,13 +151,6 @@ export default {
       this.prepareTimelineData(dividendTimelineData.halfYearly, 6, end);
       this.prepareTimelineData(dividendTimelineData.yearly, 12, end);
       //
-
-      /**
-       * datasets: [
-          { label: "USD", data: [20, 52, 17, 4] },
-          { label: "GBP", data: [4, 1, 7, 2] }
-        ]
-       */
 
       //https://stackoverflow.com/a/35970005  this.supportedInstruments.foreach(instrument => {}); will not work
       for (const instrument of this.supportedInstruments) {
@@ -456,36 +271,363 @@ export default {
       divSums = { ytd: formatter.format(divSums.ytd), ttm: formatter.format(divSums.ttm), l5y: formatter.format(divSums.l5y), all: formatter.format(divSums.all) };
 
       return { sums: divSums, instrumentAccummulations: instrumentDivValues, dividendTimelineData: dividendTimelineData };
+    },
+    valuations() {
+      const vInstruments = []; //labels: [], unitValue: [], holdings: [] };
+      const vPortfolios = []; //{ labels: [], holdings: [] };
+      const vCurrencies = []; //{ labels: [], holdings: [] };
+
+      for (const instrument of this.supportedInstruments) {
+        const valueIndex = this.values.records.findIndex(value => value.instrumentId == instrument.id);
+        if (valueIndex > -1) {
+          vInstruments.push({ label: instrument.code, valuation: 0, unitValue: this.values.records[valueIndex].value });
+        }
+      }
+
+      for (const p of this.portfolios) {
+        vPortfolios.push({ label: p.code, valuation: 0 });
+      }
+
+      for (const c of this.currencies) {
+        vCurrencies.push({ label: c.code, valuation: 0 });
+      }
+
+      let stockIndex = -1,
+        portfolioIndex = -1,
+        currencyIndex = -1;
+
+      for (const t of this.transactions) {
+        if (t.type == "BUY" || t.type == "SELL") {
+          stockIndex = vInstruments.findIndex(value => value.label == t.instrumentCode);
+          portfolioIndex = vPortfolios.findIndex(value => value.label == t.portfolioCode);
+          currencyIndex = vCurrencies.findIndex(value => value.label == t.currencyCode);
+          //console.log(`Will check ${t.id}>> STOCK:${stockIndex}, PORT:${portfolioIndex}, CURRENCY:${currencyIndex}`);
+          if (stockIndex > -1 && portfolioIndex > -1 && currencyIndex > -1) {
+            const value = t.type == "BUY" ? t.units * vInstruments[stockIndex].unitValue : -t.units * vInstruments[stockIndex].unitValue;
+            let valueInBaseCurrency = 0;
+            switch (t.currencyCode) {
+              case "USD":
+                valueInBaseCurrency = value * this.fx.usd;
+                break;
+              case "GBX":
+                valueInBaseCurrency = value * this.fx.gbx;
+                break;
+              case "EUR":
+                valueInBaseCurrency = value * this.fx.eur;
+                break;
+              case "USX":
+                valueInBaseCurrency = value * this.fx.usx;
+                break;
+              case "GBP":
+                valueInBaseCurrency = value * this.fx.gbp;
+                break;
+              case "EUX":
+                valueInBaseCurrency = value * this.fx.eux;
+                break;
+            }
+            vInstruments[stockIndex].valuation += +valueInBaseCurrency;
+            vPortfolios[portfolioIndex].valuation += valueInBaseCurrency;
+            vCurrencies[currencyIndex].valuation += valueInBaseCurrency;
+          }
+        }
+      }
+
+      // compact and sort instrument valuations + remove those with zero value
+      const instrumentsValuations = { labels: [], valuations: [] };
+      this.getCompactValuation(vInstruments, instrumentsValuations);
+
+      // compact and sort currency valuations + remove those with zero value
+      const currencyValuations = { labels: [], valuations: [] };
+      this.getCompactValuation(vCurrencies, currencyValuations);
+
+      // compact and sort portfolio valuations + remove those with zero value
+      const portfolioValuations = { labels: [], valuations: [] };
+      let portfoliosTotal = this.getCompactValuation(vPortfolios, portfolioValuations);
+
+      const format = this.displayFormats[this.formmaterIndex];
+      const formatter = new Intl.NumberFormat(format.locale, { style: "currency", currency: format.currency });
+      portfoliosTotal = formatter.format(portfoliosTotal);
+      //
+
+      return { instruments: instrumentsValuations /*, instruments: vInstruments*/, portfolios: portfolioValuations, currencies: currencyValuations /*vCurrencies */, portfoliosTotalValue: portfoliosTotal };
+    },
+    instrumentDividendsChartInfo() {
+      const labels = [];
+      const data = [];
+      let seriesLabel = null;
+
+      if (this.dividends.instrumentAccummulations.length > 0) {
+        const safeinstrumentAccummulations = this.dividends.instrumentAccummulations.slice();
+
+        switch (this.accumulatedDividendsRange) {
+          case 0:
+            seriesLabel = "Dividend (YTD)";
+            safeinstrumentAccummulations.sort(function(a, b) {
+              return b.ytd - a.ytd;
+            });
+            for (const iDivValues of safeinstrumentAccummulations) {
+              if (iDivValues.ytd > 0) {
+                labels.push(iDivValues.code);
+                data.push(iDivValues.ytd);
+              }
+            }
+            break;
+          case 1:
+            seriesLabel = "Dividend (TTM)";
+            safeinstrumentAccummulations.sort(function(a, b) {
+              return b.ttm - a.ttm;
+            });
+            for (const iDivValues of safeinstrumentAccummulations) {
+              if (iDivValues.ttm > 0) {
+                labels.push(iDivValues.code);
+                data.push(iDivValues.ttm);
+              }
+            }
+            break;
+          case 2:
+            seriesLabel = "Dividend (5YRS)";
+            safeinstrumentAccummulations.sort(function(a, b) {
+              return b.l5y - a.l5y;
+            });
+            for (const iDivValues of safeinstrumentAccummulations) {
+              if (iDivValues.l5y > 0) {
+                labels.push(iDivValues.code);
+                data.push(iDivValues.l5y);
+              }
+            }
+            break;
+          default:
+            seriesLabel = "Dividend (ALL)";
+            safeinstrumentAccummulations.sort(function(a, b) {
+              return b.all - a.all;
+            });
+            for (const iDivValues of safeinstrumentAccummulations) {
+              if (iDivValues.all > 0) {
+                labels.push(iDivValues.code);
+                data.push(iDivValues.all);
+              }
+            }
+        }
+      }
+
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          xAxes: [
+            {
+              gridLines: {
+                drawOnChartArea: false
+              },
+              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
+            }
+          ],
+          yAxes: [
+            {
+              gridLines: {
+                drawOnChartArea: false
+                //lineWidth: 1.0, color: 'rgba(0,123,255, 0.15)'
+              },
+              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
+            }
+          ]
+        }
+        // tooltips: { //https://stackoverflow.com/questions/25880767/chart-js-number-format
+        //   callbacks: {
+        //     label: function(tooltipItem) {
+        //       return tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+        //     }
+        //   }
+        // }
+      };
+
+      const result = {
+        chartData: {
+          labels: labels,
+          datasets: [
+            {
+              label: seriesLabel,
+              data: data,
+              backgroundColor: "rgba(0,123,255, 1.0)",
+              hoverBackgroundColor: "rgba(52,58,64, 0.5)"
+            }
+          ]
+        },
+        chartOptions: options
+      };
+
+      return result;
+    },
+    dividendTimelineChartInfo() {
+      const datasets = [];
+      console.log("Heading");
+
+      if (this.dividends.dividendTimelineData.quarterly.dates.length > 0) {
+        //let safeinstrumentAccummulations = this.dividends.instrumentAccummulations.slice();
+        console.log("Heading2");
+        let dataSource = null;
+        let shift = 0;
+        switch (this.timeIncrements) {
+          case 0:
+            dataSource = this.dividends.dividendTimelineData.monthly;
+            shift = 15 * 24 * 60 * 60 * 1000; //millis
+            break;
+          case 1:
+            dataSource = this.dividends.dividendTimelineData.quarterly;
+            shift = 45 * 24 * 60 * 60 * 1000; //millis
+            break;
+          case 2:
+            dataSource = this.dividends.dividendTimelineData.halfYearly;
+            shift = 90 * 24 * 60 * 60 * 1000; //millis
+            break;
+          default:
+            dataSource = this.dividends.dividendTimelineData.yearly;
+            shift = 180 * 24 * 60 * 60 * 1000; //millis
+        }
+
+        const midPeriodDates = [];
+        for (let i = 0; i < dataSource.dates.length; i++) {
+          const dd = dataSource.dates[i];
+          const dds = new Date(dd);
+          dds.setTime(dd.getTime() + shift);
+          midPeriodDates.push(dds);
+        }
+
+        datasets.push({ label: "EUR", data: this.getTimeSeriesDataset(midPeriodDates, dataSource.eur) });
+        datasets.push({ backgroundColor: "rgba(0,123,255, 1.0)", label: "USD", data: this.getTimeSeriesDataset(midPeriodDates, dataSource.usd) });
+        datasets.push({ fill: "-1", backgroundColor: "rgba(220, 0, 0, 0.2)", label: "GBP", data: this.getTimeSeriesDataset(midPeriodDates, dataSource.gbp) });
+
+        // //round about way of stacking - chart.js
+        // const eurusd = dataSource.eur.map((e, i) => e + dataSource.usd[i]);
+        // const eurusdgbp = dataSource.eur.map((e, i) => e + dataSource.usd[i] + dataSource.gbp[i]);
+        // datasets.push({ backgroundColor: "rgba(0,123,255, 1.0)", label: "USD", data: this.getTimeSeriesDataset(midPeriodDates, eurusd) });
+        // datasets.push({ fill: "-1", backgroundColor: "rgba(220, 0, 0, 0.2)", label: "GBP", data: this.getTimeSeriesDataset(midPeriodDates, eurusdgbp) });
+      }
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          xAxes: [
+            {
+              gridLines: {
+                drawOnChartArea: false
+              },
+              type: "time"
+              //ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
+            }
+          ],
+          yAxes: [
+            {
+              gridLines: {
+                drawOnChartArea: false
+                //lineWidth: 1.0, color: 'rgba(0,123,255, 0.15)'
+              },
+              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" },
+              stacked: true
+            }
+          ]
+        }
+      };
+
+      return { chartData: { datasets: datasets }, chartOptions: options };
+    },
+    instrumentHoldingsChartInfo() {
+      const seriesLabel = "Instruments (Holdings)";
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          xAxes: [
+            {
+              gridLines: {
+                drawOnChartArea: false
+              },
+              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
+            }
+          ],
+          yAxes: [
+            {
+              gridLines: {
+                drawOnChartArea: false
+                //lineWidth: 1.0, color: 'rgba(0,123,255, 0.15)'
+              },
+              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
+            }
+          ]
+        }
+        // tooltips: { //https://stackoverflow.com/questions/25880767/chart-js-number-format
+        //   callbacks: {
+        //     label: function(tooltipItem) {
+        //       return tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+        //     }
+        //   }
+        // }
+      };
+      const result = {
+        chartData: {
+          labels: this.valuations.instruments.labels,
+          datasets: [
+            {
+              label: seriesLabel,
+              data: this.valuations.instruments.valuations,
+              backgroundColor: "rgba(0,123,255, 1.0)",
+              hoverBackgroundColor: "rgba(52,58,64, 0.5)"
+            }
+          ]
+        },
+        chartOptions: options
+      };
+      return result;
+    },
+    portfolioHoldingsChartInfo() {
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false
+      };
+      const result = {
+        chartData: {
+          labels: this.valuations.portfolios.labels,
+          datasets: [
+            {
+              data: this.valuations.portfolios.valuations,
+              //backgroundColor: "rgba(0,123,255, 1.0)",
+              //hoverBackgroundColor: "rgba(52,58,64, 0.5)"
+              backgroundColor: ["rgb(255, 159, 64)", "rgb(75, 192, 192)", "rgb(54, 162, 235)", "rgb(231,233,237)" /*window.chartColors.green, window.chartColors.blue*/]
+            }
+          ]
+        },
+        chartOptions: options
+      };
+      return result;
+    },
+    currencyHoldingsChartInfo() {
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false
+      };
+      const result = {
+        chartData: {
+          labels: this.valuations.currencies.labels,
+          datasets: [
+            {
+              data: this.valuations.currencies.valuations,
+              //backgroundColor: "rgba(0,123,255, 1.0)",
+              //hoverBackgroundColor: "rgba(52,58,64, 0.5)"
+              backgroundColor: ["rgb(255, 159, 64)", "rgb(75, 192, 192)", "rgb(54, 162, 235)", "rgb(231,233,237)" /*window.chartColors.green, window.chartColors.blue*/]
+            }
+          ]
+        },
+        chartOptions: options
+      };
+      return result;
     }
   },
   data() {
     return {
       accumulatedDividendsRange: 3, //0- ytd, 1- TTM, 2 - l5y, 3 - all
       timeIncrements: 3, // 0 - monthly, 1 - quaterly, 2 - half-yearly, 3 - yearly
-      lineChartData: {
-        labels: ["GRMD", "RDSD", "PFDD", "GRCD"],
-        datasets: [
-          { label: "USD", data: [20, 52, 17, 4] },
-          { label: "GBP", data: [4, 1, 7, 2] }
-        ]
-      },
-      doughnutChartData: {
-        datasets: [
-          {
-            data: [10, 20, 30]
-          }
-        ],
-
-        // These labels appear in the legend and in the tooltips when hovering different arcs
-        labels: ["Red", "Yellow", "Blue"]
-      },
       localeIndex: 0,
       projectedDividends: true,
-
-      options: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
     };
   },
   methods: {
@@ -510,6 +652,27 @@ export default {
         result.push({ t: xSeries[i], y: ySeries[i] });
       }
       return result;
+    },
+    getCompactValuation(dataset, results) {
+      //make a safe copy of and sort from high to low
+      const safeValuations = dataset.slice();
+      safeValuations.sort(function(a, b) {
+        return b.valuation - a.valuation;
+      });
+      // compact valuations - remove those with zero value
+      //const vs = { labels: [], valuations: [] };
+      let idx = 0;
+      let total = 0;
+      for (; idx < safeValuations.length; idx++) {
+        if (safeValuations[idx].valuation > 0) {
+          results.labels.push(safeValuations[idx].label);
+          results.valuations.push(safeValuations[idx].valuation);
+          total += safeValuations[idx].valuation;
+        } else {
+          break;
+        }
+      }
+      return total;
     }
   },
   mounted() {
@@ -534,5 +697,10 @@ export default {
   position: relative;
   margin: auto;
   width: 80vw;
+}
+.charts-container {
+  position: relative;
+  margin: auto;
+  width: 40w;
 }
 </style>
