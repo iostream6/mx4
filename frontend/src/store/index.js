@@ -370,7 +370,7 @@ export default new Vuex.Store({
           results["transactions"] = [];
           for (const t of axiosResponse.data) {
             const item = {};
-            for (const input of ["id", "type", "units", "amountPerUnit", "fees", "taxes"]) {
+            for (const input of ["id", "type", "units", "amountPerUnit", "fees", "taxes", "provisional"]) {
               item[input] = t[input];
             }
             item.date = new Date(t.date);

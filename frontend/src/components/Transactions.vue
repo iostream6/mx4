@@ -4,6 +4,7 @@
 ***  2020.06.07  - Switched to bootstrap-vue table. Implemented transaction list, filter/sort/pagination support
 ***  2020.06.10  - Improved add transaction implementation. Now uses transaction model in app state
 ***  2020.06.11  - Implemented edit transaction, using the add transaction harness/forms.
+***  2020.07.04  - Transaction provisional attribute now correctly populated by frontend add/edit UI
 -->
 <template>
   <div id="layoutSidenav_content">
@@ -139,6 +140,11 @@
               <!-- pattern="^\d+(\.\d+)?" -->
             </div>
           </div>
+          <div class="row">
+            <div class="form-group col-md-12 text-left">
+              <b-form-checkbox id="optValidated" v-model="transaction.provisional">Input data is provisional</b-form-checkbox>
+            </div>
+          </div>
         </form>
       </b-modal>
     </div>
@@ -170,6 +176,8 @@ export default {
         fees: null,
         taxes: null,
         type: null,
+        //
+        provisional: true,
         //
         portfolio: null,
         currency: null,
@@ -341,6 +349,8 @@ export default {
         taxes: null,
         type: null,
         //
+        provisional: true,
+        //
         portfolio: null,
         currency: null,
         instrument: null
@@ -371,6 +381,7 @@ export default {
           fees: t.fees,
           taxes: t.taxes,
           type: t.type,
+          provisional: t.provisional,
           //
           //
           portfolioId: t.portfolio.id,
@@ -384,7 +395,7 @@ export default {
         };
         this.addAction(requestInfo).then(addedResponseObject => {
           const item = {};
-          for (const input of ["type", "units", "amountPerUnit", "fees", "taxes"]) {
+          for (const input of ["type", "units", "amountPerUnit", "fees", "taxes", "provisional"]) {
             item[input] = d[input];
           }
 
@@ -417,6 +428,7 @@ export default {
           fees: t.fees,
           taxes: t.taxes,
           type: t.type,
+          provisional: t.provisional,
           //
           //
           portfolioId: t.portfolio.id,
@@ -434,7 +446,7 @@ export default {
         if (result == true) {
           //update the table with saved data
           const item = {};
-          for (const input of ["id", "type", "units", "amountPerUnit", "fees", "taxes"]) {
+          for (const input of ["id", "type", "units", "amountPerUnit", "fees", "taxes", "provisional"]) {
             item[input] = t[input];
           }
           item.date = new Date(t.date);
@@ -508,7 +520,7 @@ export default {
       // let parameter = null;
       const selectedTransaction = this.selectedRows[0];
       const se = this.transaction;
-      for (const input of ["id", "date", "type", "units", "amountPerUnit", "fees", "taxes"]) {
+      for (const input of ["id", "date", "type", "units", "amountPerUnit", "fees", "taxes", "provisional"]) {
         se[input] = selectedTransaction[input];
       }
       //
