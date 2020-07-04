@@ -4,6 +4,7 @@
 ***  2020.06.17 Implemented display dividend timeline chart
 ***  2020.07.01 Implemented instrument/portfolio/currency valuation barcharts
 ***  2020.07.04 Fixed tooltips format for barcharts and doughnut charts. Introduced custom Chart.js colours. Added quaterly dividend growth chart
+***             Instrument Holdings valuation chart tooltip now includes the number of units as well
 -->
 
 <template>
@@ -289,7 +290,7 @@ export default {
       for (const instrument of this.supportedInstruments) {
         const valueIndex = this.values.records.findIndex(value => value.instrumentId == instrument.id);
         if (valueIndex > -1) {
-          vInstruments.push({ label: instrument.code, valuation: 0, unitValue: this.values.records[valueIndex].value });
+          vInstruments.push({ label: instrument.code, valuation: 0, units: 0, unitValue: this.values.records[valueIndex].value });
         }
       }
 
@@ -312,7 +313,8 @@ export default {
           currencyIndex = vCurrencies.findIndex(value => value.label == t.currencyCode);
           //console.log(`Will check ${t.id}>> STOCK:${stockIndex}, PORT:${portfolioIndex}, CURRENCY:${currencyIndex}`);
           if (stockIndex > -1 && portfolioIndex > -1 && currencyIndex > -1) {
-            const value = t.type == "BUY" ? t.units * vInstruments[stockIndex].unitValue : -t.units * vInstruments[stockIndex].unitValue;
+            const units = t.type == "BUY" ? t.units  : -t.units;
+            const value = units * vInstruments[stockIndex].unitValue;
             let valueInBaseCurrency = 0;
             switch (t.currencyCode) {
               case "USD":
@@ -334,7 +336,8 @@ export default {
                 valueInBaseCurrency = value * this.fx.eux;
                 break;
             }
-            vInstruments[stockIndex].valuation += +valueInBaseCurrency;
+            vInstruments[stockIndex].units += units;
+            vInstruments[stockIndex].valuation += valueInBaseCurrency;
             vPortfolios[portfolioIndex].valuation += valueInBaseCurrency;
             vCurrencies[currencyIndex].valuation += valueInBaseCurrency;
           }
@@ -342,7 +345,7 @@ export default {
       }
 
       // compact and sort instrument valuations + remove those with zero value
-      const instrumentsValuations = { labels: [], valuations: [] };
+      const instrumentsValuations = { labels: [], valuations: [], units: []};
       this.getCompactValuation(vInstruments, instrumentsValuations);
 
       // compact and sort currency valuations + remove those with zero value
@@ -602,7 +605,8 @@ export default {
       return { chartData: chartData, chartOptions: options };
     },
     instrumentHoldingsChartInfo() {
-      const seriesLabel = "Instruments (Holdings)";
+      const seriesLabel = "Instruments Holdings";
+      const thisInstance = this;
       const options = {
         responsive: true,
         maintainAspectRatio: false,
@@ -629,7 +633,9 @@ export default {
           //https://stackoverflow.com/questions/25880767/chart-js-number-format
           callbacks: {
             label: function(tooltipItem) {
-              return tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+              const index = thisInstance.valuations.instruments.labels.findIndex(value => value == tooltipItem.xLabel);
+              const units = thisInstance.valuations.instruments.units[index];
+              return `${tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")} (${units})`;
               //return Number.parseFloat(tooltipItem.value).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
             }
           }
@@ -768,6 +774,9 @@ export default {
         if (safeValuations[idx].valuation > 0) {
           results.labels.push(safeValuations[idx].label);
           results.valuations.push(safeValuations[idx].valuation);
+          if(results.units != null){
+            results.units.push(safeValuations[idx].units);
+          }
           total += safeValuations[idx].valuation;
         } else {
           break;
