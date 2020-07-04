@@ -3,7 +3,7 @@
 ***  2020.06.13 Implemented display of dividend per instrument
 ***  2020.06.17 Implemented display dividend timeline chart
 ***  2020.07.01 Implemented instrument/portfolio/currency valuation barcharts
-***  2020.07.04 Fixed tooltips format for barcharts and doughnut charts. Introduced custom Chart.js colours.
+***  2020.07.04 Fixed tooltips format for barcharts and doughnut charts. Introduced custom Chart.js colours. Added quaterly dividend growth chart
 -->
 
 <template>
@@ -92,6 +92,11 @@
         <!-- -->
         <div class="chart-container mt-4 mb-4">
           <bar-chart :chartData="instrumentDividendsChartInfo.chartData" :options="instrumentDividendsChartInfo.chartOptions"></bar-chart>
+        </div>
+        <hr />
+        <!-- -->
+        <div class="chart-container mt-4 mb-4">
+          <bar-chart :chartData="dividendGrowthChartInfo.chartData" :options="dividendGrowthChartInfo.chartOptions"></bar-chart>
         </div>
         <hr />
         <!-- -->
@@ -455,7 +460,7 @@ export default {
               data: data,
               backgroundColor: this.chartColors.bsb,
               //hoverBackgroundColor: "rgba(52,58,64, 0.5)"
-              hoverBackgroundColor: this.chartColors.grey,
+              hoverBackgroundColor: this.chartColors.grey
             }
           ]
         },
@@ -466,11 +471,8 @@ export default {
     },
     dividendTimelineChartInfo() {
       const datasets = [];
-      console.log("Heading");
-
       if (this.dividends.dividendTimelineData.quarterly.dates.length > 0) {
         //let safeinstrumentAccummulations = this.dividends.instrumentAccummulations.slice();
-        console.log("Heading2");
         let dataSource = null;
         let shift = 0;
         switch (this.timeIncrements) {
@@ -537,6 +539,68 @@ export default {
 
       return { chartData: { datasets: datasets }, chartOptions: options };
     },
+    dividendGrowthChartInfo() {
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          xAxes: [
+            {
+              gridLines: {
+                drawOnChartArea: false
+              },
+              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
+            }
+          ],
+          yAxes: [
+            {
+              gridLines: {
+                drawOnChartArea: false
+                //lineWidth: 1.0, color: 'rgba(0,123,255, 0.15)'
+              },
+              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
+            }
+          ]
+        },
+        tooltips: {
+          //https://stackoverflow.com/questions/25880767/chart-js-number-format
+          callbacks: {
+            label: function(tooltipItem) {
+              return tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+              //return Number.parseFloat(tooltipItem.value).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+            }
+          }
+        }
+      };
+
+      let chartData = null;
+
+      const datasets = [];
+      if (this.dividends.dividendTimelineData.quarterly.dates.length > 0) {
+        const ds = this.dividends.dividendTimelineData.quarterly;
+        const NUMBER_OF_YEARS = 5;
+        const d = new Date();
+        const currentYear = d.getFullYear();
+        const earliestAllowedQuater = new Date(currentYear - NUMBER_OF_YEARS + 1, 0, 1);
+        let startIndex = 0;
+        const yearLabels = [];
+        for(; startIndex < ds.dates.length; startIndex++){
+          if(ds.dates[startIndex] >= earliestAllowedQuater){
+            for(let j = ds.dates[startIndex].getFullYear();  j <= currentYear; j++){
+              yearLabels.push(j + '');
+            }
+            break;
+          }
+        }
+        this.getGrowthSeriesDataset(datasets, { label: "Q1", backgroundColor: this.chartColors.red, data: [] }, ds, startIndex);
+        this.getGrowthSeriesDataset(datasets, { label: "Q2", backgroundColor: this.chartColors.orange, data: [] }, ds, startIndex + 1);
+        this.getGrowthSeriesDataset(datasets, { label: "Q3", backgroundColor: this.chartColors.purple, data: [] }, ds, startIndex + 2);
+        this.getGrowthSeriesDataset(datasets, { label: "Q4", backgroundColor: this.chartColors.green, data: [] }, ds, startIndex + 3);
+        chartData = { labels: yearLabels, datasets: datasets };
+      }
+
+      return { chartData: chartData, chartOptions: options };
+    },
     instrumentHoldingsChartInfo() {
       const seriesLabel = "Instruments (Holdings)";
       const options = {
@@ -579,7 +643,7 @@ export default {
               label: seriesLabel,
               data: this.valuations.instruments.valuations,
               backgroundColor: this.chartColors.bsb,
-              hoverBackgroundColor: this.chartColors.grey,
+              hoverBackgroundColor: this.chartColors.grey
             }
           ]
         },
@@ -595,9 +659,9 @@ export default {
           //https://stackoverflow.com/questions/25880767/chart-js-number-format,   https://www.chartjs.org/docs/latest/configuration/tooltip.html#tooltip-item-interface
           callbacks: {
             label: function(tooltipItem, data) {
-              //return data.labels[tooltipItem.index]; This will be the dataset label 
+              //return data.labels[tooltipItem.index]; This will be the dataset label
               //return  data.datasets[0].data[tooltipItem.index] ; this will be the value
-              return data.labels[tooltipItem.index] + ': ' + data.datasets[0].data[tooltipItem.index].toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")  ; //  tooltipItem.label; //.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+              return data.labels[tooltipItem.index] + ": " + data.datasets[0].data[tooltipItem.index].toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,"); //  tooltipItem.label; //.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
             }
           }
         }
@@ -626,9 +690,9 @@ export default {
           //https://stackoverflow.com/questions/25880767/chart-js-number-format,   https://www.chartjs.org/docs/latest/configuration/tooltip.html#tooltip-item-interface
           callbacks: {
             label: function(tooltipItem, data) {
-              //return data.labels[tooltipItem.index]; This will be the dataset label 
+              //return data.labels[tooltipItem.index]; This will be the dataset label
               //return  data.datasets[0].data[tooltipItem.index] ; this will be the value
-              return data.labels[tooltipItem.index] + ': ' + data.datasets[0].data[tooltipItem.index].toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")  ; //  tooltipItem.label; //.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+              return data.labels[tooltipItem.index] + ": " + data.datasets[0].data[tooltipItem.index].toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,"); //  tooltipItem.label; //.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
             }
           }
         }
@@ -656,7 +720,7 @@ export default {
       timeIncrements: 3, // 0 - monthly, 1 - quaterly, 2 - half-yearly, 3 - yearly
       localeIndex: 0,
       projectedDividends: true,
-      chartColors: {bsb: 'rgba(0,123,255, 1.0)', red: 'rgb(255, 99, 132)', orange: 'rgb(255, 159, 64)', yellow: 'rgb(255, 205, 86)', green: 'rgb(75, 192, 192)', blue: 'rgb(54, 162, 235)', purple: 'rgb(153, 102, 255)', grey: 'rgb(231,233,237)'},
+      chartColors: { bsb: "rgba(0,123,255, 1.0)", red: "rgb(255, 99, 132)", orange: "rgb(255, 159, 64)", yellow: "rgb(255, 205, 86)", green: "rgb(75, 192, 192)", blue: "rgb(54, 162, 235)", purple: "rgb(153, 102, 255)", grey: "rgb(231,233,237)" }
     };
   },
   methods: {
@@ -681,6 +745,14 @@ export default {
         result.push({ t: xSeries[i], y: ySeries[i] });
       }
       return result;
+    },
+    getGrowthSeriesDataset(datasets, dataset, datasource, offset) {
+      let i = offset;
+      for (; i < datasource.dates.length; ) {
+        dataset.data.push(datasource.total[i]);
+        i += 4;
+      }
+      datasets.push(dataset);
     },
     getCompactValuation(dataset, results) {
       //make a safe copy of and sort from high to low
