@@ -5,7 +5,7 @@
  * 2020.06.05 - Method to read all transactions in all portfolios owned/readable by a given user implemented.
  * 2020.06.06 - Added multiple transactions delete endpoint
  * 2020.06.07 - Added createTransactionFromLegacyData method to handle transaction migration from Excel
- * 2020.07.04 - Switch transaction date to LocalDate from Date 
+ * 2020.07.04 - Switch transaction date to LocalDate from Date. createTransactionFromLegacyData method now determines whether to set provisional true/false by date stamp
  */
 package mx4.springboot.services;
 
@@ -313,20 +313,22 @@ public class PortfolioService {
         final Scanner lineScanner = new Scanner(data);
         final int PROVISIONAL_INDEX = 0, DATE_INDEX = 2, PORTFOLIO_INDEX = 3, CURRENCY_INDEX = 4, TYPE_INDEX = 5, INSTRUMENT_INDEX = 6,
                 UNITS_INDEX = 7, AMOUNT_PER_UNIT_INDEX = 8, FEES_INDEX = 10, TAXES_INDEX = 11;
-        final String ONE = "1";
         //final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         final DecimalFormat nf = new DecimalFormat("#0.00##");
         final ArrayList<Transaction> transactions = new ArrayList<>();
+        
+        LocalDate now = LocalDate.now();
+
         String temp;
         while (lineScanner.hasNextLine()) {
             final String[] lineData = lineScanner.nextLine().split("\t");
             final Transaction t = new Transaction();
             //
             try {
-                t.setProvisional(lineData[PROVISIONAL_INDEX].equals(ONE));
                 //t.setDate(sdf.parse(lineData[DATE_INDEX]));
                 t.setDate(LocalDate.parse(lineData[DATE_INDEX], dtf));
+                t.setProvisional(t.getDate().isAfter(now));
                 //portfolio
                 for (final Portfolio p : portfolios) {
                     if (p.getCode().equals(lineData[PORTFOLIO_INDEX])) {
