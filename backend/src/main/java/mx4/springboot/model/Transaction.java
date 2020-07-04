@@ -1,9 +1,10 @@
 /*
  * 2020.03.31  - Created
+ * 2020.07.04  - Switch transaction date to LocalDate from Date 
  */
 package mx4.springboot.model;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 /**
  *
@@ -13,7 +14,7 @@ public class Transaction {
 
     private String id;
 
-    private Date date;
+    private LocalDate date;
 
     private String portfolioId;
 
@@ -49,11 +50,11 @@ public class Transaction {
         this.id = id;
     }
 
-    public Date getDate() {
+    public LocalDate getDate() {
         return date;
     }
 
-    public void setDate(Date date) {
+    public void setDate(LocalDate date) {
         this.date = date;
     }
 
