@@ -3,6 +3,7 @@
 ***  2020.06.13 Implemented display of dividend per instrument
 ***  2020.06.17 Implemented display dividend timeline chart
 ***  2020.07.01 Implemented instrument/portfolio/currency valuation barcharts
+***  2020.07.04 Fixed tooltips format for barcharts and doughnut charts. Introduced custom Chart.js colours.
 -->
 
 <template>
@@ -77,10 +78,13 @@
         <hr />
         <!-- -->
         <div class="row">
-          <div class="col-xl-6 col-md-6">
+          <div class="col-xl-4 col-md-6">
             <doughnut :chartData="portfolioHoldingsChartInfo.chartData" :options="portfolioHoldingsChartInfo.chartOptions"></doughnut>
           </div>
-          <div class="col-xl-6 col-md-6">
+          <div class="col-xl-4 col-md-6">
+            <doughnut :chartData="currencyHoldingsChartInfo.chartData" :options="currencyHoldingsChartInfo.chartOptions"></doughnut>
+          </div>
+          <div class="col-xl-4 col-md-6">
             <doughnut :chartData="currencyHoldingsChartInfo.chartData" :options="currencyHoldingsChartInfo.chartOptions"></doughnut>
           </div>
         </div>
@@ -431,14 +435,15 @@ export default {
               ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
             }
           ]
+        },
+        tooltips: {
+          //https://stackoverflow.com/questions/25880767/chart-js-number-format
+          callbacks: {
+            label: function(tooltipItem) {
+              return tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+            }
+          }
         }
-        // tooltips: { //https://stackoverflow.com/questions/25880767/chart-js-number-format
-        //   callbacks: {
-        //     label: function(tooltipItem) {
-        //       return tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
-        //     }
-        //   }
-        // }
       };
 
       const result = {
@@ -448,8 +453,9 @@ export default {
             {
               label: seriesLabel,
               data: data,
-              backgroundColor: "rgba(0,123,255, 1.0)",
-              hoverBackgroundColor: "rgba(52,58,64, 0.5)"
+              backgroundColor: this.chartColors.bsb,
+              //hoverBackgroundColor: "rgba(52,58,64, 0.5)"
+              hoverBackgroundColor: this.chartColors.grey,
             }
           ]
         },
@@ -554,14 +560,16 @@ export default {
               ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
             }
           ]
+        },
+        tooltips: {
+          //https://stackoverflow.com/questions/25880767/chart-js-number-format
+          callbacks: {
+            label: function(tooltipItem) {
+              return tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+              //return Number.parseFloat(tooltipItem.value).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+            }
+          }
         }
-        // tooltips: { //https://stackoverflow.com/questions/25880767/chart-js-number-format
-        //   callbacks: {
-        //     label: function(tooltipItem) {
-        //       return tooltipItem.yLabel.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
-        //     }
-        //   }
-        // }
       };
       const result = {
         chartData: {
@@ -570,8 +578,8 @@ export default {
             {
               label: seriesLabel,
               data: this.valuations.instruments.valuations,
-              backgroundColor: "rgba(0,123,255, 1.0)",
-              hoverBackgroundColor: "rgba(52,58,64, 0.5)"
+              backgroundColor: this.chartColors.bsb,
+              hoverBackgroundColor: this.chartColors.grey,
             }
           ]
         },
@@ -582,7 +590,17 @@ export default {
     portfolioHoldingsChartInfo() {
       const options = {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        tooltips: {
+          //https://stackoverflow.com/questions/25880767/chart-js-number-format,   https://www.chartjs.org/docs/latest/configuration/tooltip.html#tooltip-item-interface
+          callbacks: {
+            label: function(tooltipItem, data) {
+              //return data.labels[tooltipItem.index]; This will be the dataset label 
+              //return  data.datasets[0].data[tooltipItem.index] ; this will be the value
+              return data.labels[tooltipItem.index] + ': ' + data.datasets[0].data[tooltipItem.index].toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")  ; //  tooltipItem.label; //.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+            }
+          }
+        }
       };
       const result = {
         chartData: {
@@ -592,7 +610,7 @@ export default {
               data: this.valuations.portfolios.valuations,
               //backgroundColor: "rgba(0,123,255, 1.0)",
               //hoverBackgroundColor: "rgba(52,58,64, 0.5)"
-              backgroundColor: ["rgb(255, 159, 64)", "rgb(75, 192, 192)", "rgb(54, 162, 235)", "rgb(231,233,237)" /*window.chartColors.green, window.chartColors.blue*/]
+              backgroundColor: [this.chartColors.red, this.chartColors.orange, this.chartColors.yellow, this.chartColors.green, this.chartColors.blue, this.chartColors.purple]
             }
           ]
         },
@@ -603,7 +621,17 @@ export default {
     currencyHoldingsChartInfo() {
       const options = {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        tooltips: {
+          //https://stackoverflow.com/questions/25880767/chart-js-number-format,   https://www.chartjs.org/docs/latest/configuration/tooltip.html#tooltip-item-interface
+          callbacks: {
+            label: function(tooltipItem, data) {
+              //return data.labels[tooltipItem.index]; This will be the dataset label 
+              //return  data.datasets[0].data[tooltipItem.index] ; this will be the value
+              return data.labels[tooltipItem.index] + ': ' + data.datasets[0].data[tooltipItem.index].toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")  ; //  tooltipItem.label; //.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+            }
+          }
+        }
       };
       const result = {
         chartData: {
@@ -612,8 +640,8 @@ export default {
             {
               data: this.valuations.currencies.valuations,
               //backgroundColor: "rgba(0,123,255, 1.0)",
-              //hoverBackgroundColor: "rgba(52,58,64, 0.5)"
-              backgroundColor: ["rgb(255, 159, 64)", "rgb(75, 192, 192)", "rgb(54, 162, 235)", "rgb(231,233,237)" /*window.chartColors.green, window.chartColors.blue*/]
+              //hoverBackgroundColor: this.chartColors.grey,
+              backgroundColor: [this.chartColors.red, this.chartColors.orange, this.chartColors.yellow, this.chartColors.green, this.chartColors.blue, this.chartColors.purple]
             }
           ]
         },
@@ -628,6 +656,7 @@ export default {
       timeIncrements: 3, // 0 - monthly, 1 - quaterly, 2 - half-yearly, 3 - yearly
       localeIndex: 0,
       projectedDividends: true,
+      chartColors: {bsb: 'rgba(0,123,255, 1.0)', red: 'rgb(255, 99, 132)', orange: 'rgb(255, 159, 64)', yellow: 'rgb(255, 205, 86)', green: 'rgb(75, 192, 192)', blue: 'rgb(54, 162, 235)', purple: 'rgb(153, 102, 255)', grey: 'rgb(231,233,237)'},
     };
   },
   methods: {
