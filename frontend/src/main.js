@@ -56,11 +56,20 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 
 //A. import any desirable "solid style" icon (they are free in v5)
-import { faSignInAlt, faUserPlus, faAngleLeft, faAngleDown, faTachometerAlt, faChartArea, faTable,
-  faColumns, faBookOpen, faPlusSquare, faEdit,faTrashAlt, faCalendarAlt, faBriefcase, faHryvnia, faCoins,
-  faChess, faChessPawn, faFont /* for actions table column */, 
-  /* transaction types */ faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
-/* AppNavBar */ faUser, faAngleRight } from '@fortawesome/free-solid-svg-icons'
+import { 
+  /* Signin/Signup page */
+  faSignInAlt, faUserPlus, faAngleLeft,
+  //
+  /* Side NavBar @MainView.vue  */
+  faAngleDown, faTachometerAlt, faColumns, faBookOpen, //faChartArea, faTable,
+  //
+  /* Toolbars @Transactions.vue  */
+  faPlusSquare, faEdit,faTrashAlt, faCopy, //faCalendarAlt, faBriefcase, faHryvnia, faCoins, faChess, faChessPawn, faFont,faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
+  //
+  /* AppNavBar @AppNavBar.vue  */
+  faUser, //faAngleRight,
+  //
+} from '@fortawesome/free-solid-svg-icons'
 //alternatively, import all solid icons
 //import solid from "@fortawesome/fontawesome-free-solid";
 
@@ -75,11 +84,18 @@ import { faSignInAlt, faUserPlus, faAngleLeft, faAngleDown, faTachometerAlt, faC
 
 
 // add the imported icons to the library
-library.add(faSignInAlt, faUserPlus, faAngleLeft, faAngleDown, faTachometerAlt, faChartArea, faTable,
-  faColumns, faBookOpen, faPlusSquare, faEdit,faTrashAlt, faCalendarAlt, faBriefcase, faHryvnia, faCoins,
-  faChess, faChessPawn, faFont /* for actions table column */,
-  /* transaction types */ faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
-  faUser, faAngleRight)
+library.add(/* Signin/Signup page */
+  faSignInAlt, faUserPlus, faAngleLeft,
+  //
+  /* Side NavBar @MainView.vue  */
+  faAngleDown, faTachometerAlt, faColumns, faBookOpen, //faChartArea, faTable,
+  //
+  /* Toolbars @Transactions.vue  */
+  faPlusSquare, faEdit,faTrashAlt, faCopy, //faCalendarAlt, faBriefcase, faHryvnia, faCoins, faChess, faChessPawn, faFont,faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
+  //
+  /* AppNavBar @AppNavBar.vue  */
+  faUser, //faAngleRight,
+  )
 // you can also do library.add(solid) if you imported the entire style icons set above
 
 Vue.component('font-awesome-icon', FontAwesomeIcon)
