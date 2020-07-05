@@ -5,6 +5,7 @@
 ***  2020.06.10  - Improved add transaction implementation. Now uses transaction model in app state
 ***  2020.06.11  - Implemented edit transaction, using the add transaction harness/forms.
 ***  2020.07.04  - Transaction provisional attribute now correctly populated by frontend add/edit UI
+***  2020.07.05  - Added transaction clone functionality
 -->
 <template>
   <div id="layoutSidenav_content">
@@ -28,8 +29,11 @@
                   <b-button variant="primary" v-b-modal.t-modal>
                     <font-awesome-icon :icon="['fas', 'plus-square']" />
                   </b-button>
-                  <b-button :variant="selectedRows.length != 1 ? 'secondary' : 'primary'" :disabled="selectedRows.length != 1" @click.prevent="prepareEditDialog();$bvModal.show('t-modal')">
+                  <b-button :variant="selectedRows.length != 1 ? 'secondary' : 'primary'" :disabled="selectedRows.length != 1" @click.prevent="prepareEditDialog(false);$bvModal.show('t-modal')">
                     <font-awesome-icon :icon="['fas', 'edit']" />
+                  </b-button>
+                  <b-button :variant="selectedRows.length != 1 ? 'secondary' : 'primary'" :disabled="selectedRows.length != 1" @click.prevent="prepareEditDialog(true);$bvModal.show('t-modal')">
+                    <font-awesome-icon :icon="['fas', 'copy']" />
                   </b-button>
                   <b-button :variant="selectedRows.length == 0 ? 'secondary' : 'primary'" :disabled="selectedRows.length == 0 " @click="deleteTransactions()">
                     <font-awesome-icon :icon="['fas', 'trash-alt']" />
@@ -46,6 +50,7 @@
             <div class="col-lg-12">
               <b-table
                 ref="ttable"
+                :tbody-tr-class="rowClass"
                 :striped="tableProps.striped"
                 :bordered="tableProps.bordered"
                 :borderless="tableProps.borderless"
@@ -278,6 +283,13 @@ export default {
     ...mapState(["user", "authenticated", "transactions", "transactionTypes", "currencies", "portfolios", "supportedInstruments"])
   },
   methods: {
+    //
+    //
+    //
+    rowClass(item, type) {
+      if (!item || type !== "row") return;
+      if (item.provisional) return "text-danger";
+    },
     //
     //
     //
@@ -515,19 +527,26 @@ export default {
     // //
     // //
     // //
-    prepareEditDialog() {
+    prepareEditDialog(isClone) {
       console.log(`Calling Edit`);
       // let parameter = null;
       const selectedTransaction = this.selectedRows[0];
       const se = this.transaction;
-      for (const input of ["id", "date", "type", "units", "amountPerUnit", "fees", "taxes", "provisional"]) {
+      for (const input of ["date", "type", "units", "amountPerUnit", "fees", "taxes", "provisional"]) {
         se[input] = selectedTransaction[input];
       }
+
+      if(!isClone){
+        //this is edit mode of selected. If clone mode, we dont want to copy id as a new transaction should be created.
+        se.id = selectedTransaction.id;
+      }
+
       //
       se.portfolio = this.portfolios.find(item => item.code == selectedTransaction.portfolioCode);
       se.currency = this.currencies.find(item => item.code == selectedTransaction.currencyCode);
       se.instrument = this.supportedInstruments.find(item => item.code == selectedTransaction.instrumentCode);
-    }
+    },
+
   }
   // created() {
   //   if (this.transactions.length == 0) {
