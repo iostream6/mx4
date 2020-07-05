@@ -64,10 +64,13 @@ import {
   faAngleDown, faTachometerAlt, faColumns, faBookOpen, //faChartArea, faTable,
   //
   /* Toolbars @Transactions.vue  */
-  faPlusSquare, faEdit,faTrashAlt, faCopy, //faCalendarAlt, faBriefcase, faHryvnia, faCoins, faChess, faChessPawn, faFont,faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
+  faPlusSquare, faEdit,faTrashAlt, faCopy, faCog, //faCalendarAlt, faBriefcase, faHryvnia, faCoins, faChess, faChessPawn, faFont,faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
   //
   /* AppNavBar @AppNavBar.vue  */
-  faUser, //faAngleRight,
+  faUser, 
+  //
+  /* Dashboard @Dashboard.vue  */
+  faAngleRight,
   //
 } from '@fortawesome/free-solid-svg-icons'
 //alternatively, import all solid icons
@@ -91,10 +94,13 @@ library.add(/* Signin/Signup page */
   faAngleDown, faTachometerAlt, faColumns, faBookOpen, //faChartArea, faTable,
   //
   /* Toolbars @Transactions.vue  */
-  faPlusSquare, faEdit,faTrashAlt, faCopy, //faCalendarAlt, faBriefcase, faHryvnia, faCoins, faChess, faChessPawn, faFont,faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
+  faPlusSquare, faEdit,faTrashAlt, faCopy, faCog, //faCalendarAlt, faBriefcase, faHryvnia, faCoins, faChess, faChessPawn, faFont,faHandHoldingMedical, faHandHoldingUsd, faHandHoldingWater,
   //
   /* AppNavBar @AppNavBar.vue  */
-  faUser, //faAngleRight,
+  faUser, 
+  //
+  /* Dashboard @Dashboard.vue  */
+  faAngleRight,
   )
 // you can also do library.add(solid) if you imported the entire style icons set above
 

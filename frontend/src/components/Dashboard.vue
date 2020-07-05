@@ -5,112 +5,160 @@
 ***  2020.07.01 Implemented instrument/portfolio/currency valuation barcharts
 ***  2020.07.04 Fixed tooltips format for barcharts and doughnut charts. Introduced custom Chart.js colours. Added quaterly dividend growth chart
 ***             Instrument Holdings valuation chart tooltip now includes the number of units as well
+***  2020.07.05 Implemented dashboard settings to control the plot parameters (range, time frequency, currency, etc.)
 -->
 
 <template>
   <div id="layoutSidenav_content">
-    <main>
-      <div class="container-fluid">
-        <div class="row mt-3">
-          <div class="col-lg-3">
-            <h3 class="text-primary float-left">Dashboard</h3>
+    <div>
+      <main>
+        <div class="container-fluid">
+          <div class="row mt-3">
+            <div class="col-lg-11">
+              <h3 class="text-primary float-left">Dashboard</h3>
+            </div>
+            <div class="col-lg-1">
+              <b-button-group class="ml-3 float-right">
+                <b-button variant="primary" v-b-modal.dashboard-modal>
+                  <font-awesome-icon :icon="['fas', 'cog']" />
+                </b-button>
+              </b-button-group>
+            </div>
           </div>
-        </div>
-        <hr class="bg-primary" />
-        <!-- The card row - could also use b-card-group and b-card from bootstrap-vue, this approach is just more flexible-->
-        <div class="row">
-          <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white mb-4">
-              <div class="card-header d-flex align-items-center justify-content-between">
-                <a class="text-white stretched-link" href="#">Portfolio Value</a>
-                <div class="small text-white">
-                  <font-awesome-icon :icon="['fas', 'angle-right']" />
+          <hr class="bg-primary" />
+          <!-- The card row - could also use b-card-group and b-card from bootstrap-vue, this approach is just more flexible-->
+          <div class="row">
+            <div class="col-xl-3 col-md-6">
+              <div class="card bg-primary text-white mb-4">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                  <a class="text-white stretched-link" href="#">Portfolio Value</a>
+                  <div class="small text-white">
+                    <font-awesome-icon :icon="['fas', 'angle-right']" />
+                  </div>
+                </div>
+                <div class="card-body">
+                  <h1>{{valuations.portfoliosTotalValue}}</h1>
                 </div>
               </div>
-              <div class="card-body">
-                <h1>{{valuations.portfoliosTotalValue}}</h1>
+            </div>
+            <div class="col-xl-3 col-md-6">
+              <div class="card bg-primary text-white mb-4">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                  <a class="text-white stretched-link" href="#">Total Dividends</a>
+                  <div class="small text-white">
+                    <font-awesome-icon :icon="['fas', 'angle-right']" />
+                  </div>
+                </div>
+                <div class="card-body">
+                  <h1>{{dividends.sums.all}}</h1>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+              <div class="card bg-primary text-white mb-4">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                  <a class="text-white stretched-link" href="#">Dividends TTM</a>
+                  <div class="small text-white">
+                    <font-awesome-icon :icon="['fas', 'angle-right']" />
+                  </div>
+                </div>
+                <div class="card-body">
+                  <h1>{{dividends.sums.ttm}}</h1>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+              <div class="card bg-primary text-white mb-4">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                  <a class="text-white stretched-link" href="#">Dividends YTD</a>
+                  <div class="small text-white">
+                    <font-awesome-icon :icon="['fas', 'angle-right']" />
+                  </div>
+                </div>
+                <div class="card-body">
+                  <h1>{{dividends.sums.ytd}}</h1>
+                </div>
               </div>
             </div>
           </div>
-          <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white mb-4">
-              <div class="card-header d-flex align-items-center justify-content-between">
-                <a class="text-white stretched-link" href="#">Total Dividends</a>
-                <div class="small text-white">
-                  <font-awesome-icon :icon="['fas', 'angle-right']" />
-                </div>
-              </div>
-              <div class="card-body">
-                <h1>{{dividends.sums.all}}</h1>
-              </div>
+          <!-- -->
+          <div class="chart-container mt-4 mb-4">
+            <bar-chart :chartData="instrumentHoldingsChartInfo.chartData" :options="instrumentHoldingsChartInfo.chartOptions"></bar-chart>
+          </div>
+          <hr />
+          <!-- -->
+          <div class="row">
+            <div class="col-xl-4 col-md-6">
+              <doughnut :chartData="portfolioHoldingsChartInfo.chartData" :options="portfolioHoldingsChartInfo.chartOptions"></doughnut>
+            </div>
+            <div class="col-xl-4 col-md-6">
+              <doughnut :chartData="currencyHoldingsChartInfo.chartData" :options="currencyHoldingsChartInfo.chartOptions"></doughnut>
+            </div>
+            <div class="col-xl-4 col-md-6">
+              <doughnut :chartData="currencyHoldingsChartInfo.chartData" :options="currencyHoldingsChartInfo.chartOptions"></doughnut>
             </div>
           </div>
-          <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white mb-4">
-              <div class="card-header d-flex align-items-center justify-content-between">
-                <a class="text-white stretched-link" href="#">Dividends TTM</a>
-                <div class="small text-white">
-                  <font-awesome-icon :icon="['fas', 'angle-right']" />
-                </div>
-              </div>
-              <div class="card-body">
-                <h1>{{dividends.sums.ttm}}</h1>
-              </div>
-            </div>
+          <hr />
+          <!-- -->
+          <div class="chart-container mt-4 mb-4">
+            <bar-chart :chartData="instrumentDividendsChartInfo.chartData" :options="instrumentDividendsChartInfo.chartOptions"></bar-chart>
           </div>
-          <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white mb-4">
-              <div class="card-header d-flex align-items-center justify-content-between">
-                <a class="text-white stretched-link" href="#">Dividends YTD</a>
-                <div class="small text-white">
-                  <font-awesome-icon :icon="['fas', 'angle-right']" />
-                </div>
-              </div>
-              <div class="card-body">
-                <h1>{{dividends.sums.ytd}}</h1>
-              </div>
-            </div>
+          <hr />
+          <!-- -->
+          <div class="chart-container mt-4 mb-4">
+            <bar-chart :chartData="dividendGrowthChartInfo.chartData" :options="dividendGrowthChartInfo.chartOptions"></bar-chart>
           </div>
-        </div>
-        <!-- -->
-        <div class="chart-container mt-4 mb-4">
-          <bar-chart :chartData="instrumentHoldingsChartInfo.chartData" :options="instrumentHoldingsChartInfo.chartOptions"></bar-chart>
-        </div>
-        <hr />
-        <!-- -->
-        <div class="row">
-          <div class="col-xl-4 col-md-6">
-            <doughnut :chartData="portfolioHoldingsChartInfo.chartData" :options="portfolioHoldingsChartInfo.chartOptions"></doughnut>
-          </div>
-          <div class="col-xl-4 col-md-6">
-            <doughnut :chartData="currencyHoldingsChartInfo.chartData" :options="currencyHoldingsChartInfo.chartOptions"></doughnut>
-          </div>
-          <div class="col-xl-4 col-md-6">
-            <doughnut :chartData="currencyHoldingsChartInfo.chartData" :options="currencyHoldingsChartInfo.chartOptions"></doughnut>
-          </div>
-        </div>
-        <hr />
-        <!-- -->
-        <div class="chart-container mt-4 mb-4">
-          <bar-chart :chartData="instrumentDividendsChartInfo.chartData" :options="instrumentDividendsChartInfo.chartOptions"></bar-chart>
-        </div>
-        <hr />
-        <!-- -->
-        <div class="chart-container mt-4 mb-4">
-          <bar-chart :chartData="dividendGrowthChartInfo.chartData" :options="dividendGrowthChartInfo.chartOptions"></bar-chart>
-        </div>
-        <hr />
-        <!-- -->
+          <hr />
+          <!-- -->
 
-        <div class="chart-container mt-4 mb-4">
-          <div>
-            <line-chart :chartData="dividendTimelineChartInfo.chartData" :options="dividendTimelineChartInfo.chartOptions"></line-chart>
+          <div class="chart-container mt-4 mb-4">
+            <div>
+              <line-chart :chartData="dividendTimelineChartInfo.chartData" :options="dividendTimelineChartInfo.chartOptions"></line-chart>
+            </div>
           </div>
-        </div>
 
-        <!-- -->
-      </div>
-    </main>
+          <!-- -->
+        </div>
+      </main>
+    </div>
+
+    <!-- DASHBOARD Settings MODAL  -->
+    <div>
+      <b-modal id="dashboard-modal" @ok="updateDashboardSettings()" @hidden="cancelDialog()" centered v-bind:title="'Dashboard Settings'">
+        <form>
+          <div class="row">
+            <div class="form-group col-md-12 text-left">
+              <label for="optBaseCurrency">Base Currency:</label>
+              <b-form-select id="optBaseCurrency" v-model="dialogSettings.currency">
+                <!--<b-form-select-option :value="null" disabled>Select an option</b-form-select-option> -->
+                <b-form-select-option v-for="(c, index) in currencyOptions" v-bind:key="index" v-bind:value="index">{{c}}</b-form-select-option>
+              </b-form-select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group col-md-6 text-left">
+              <label for="optCumDividends">Cumulative Dividends:</label>
+              <b-form-select id="optCumDividends" v-model="dialogSettings.cumDiv">
+                <!--<b-form-select-option :value="null" disabled>Select an option</b-form-select-option> -->
+                <b-form-select-option v-for="(cd, index) in cumDivOptions" v-bind:key="index" v-bind:value="index">{{cd}}</b-form-select-option>
+              </b-form-select>
+            </div>
+            <div class="form-group col-md-6 text-left">
+              <label for="optDivFrequency">Dividend Frequency:</label>
+              <b-form-select id="optDivFrequency" v-model="dialogSettings.divFreq">
+                <!--<b-form-select-option :value="null" disabled>Select an option</b-form-select-option> -->
+                <b-form-select-option v-for="(df, index) in divFreqOptions" v-bind:key="index" v-bind:value="index">{{df}}</b-form-select-option>
+              </b-form-select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group col-md-12 text-left">
+              <b-form-checkbox id="optIncludeProjected" v-model="dialogSettings.projectedDividends">Include provisional data</b-form-checkbox>
+            </div>
+          </div>
+        </form>
+      </b-modal>
+    </div>
   </div>
 </template>
 
@@ -127,9 +175,9 @@ export default {
   name: "Dashboard",
   components: { LineChart, Doughnut, BarChart },
   computed: {
-    ...mapState(["isBasicDataGotten", "authenticated", "transactions", "supportedInstruments", "fxr", "values", "displayFormats", "formmaterIndex", "currencies", "portfolios"]),
+    ...mapState(["isBasicDataGotten", "authenticated", "transactions", "supportedInstruments", "fxr", "values", "displayFormats", "currencies", "portfolios"]),
     fx() {
-      const baseCurrencyId = this.displayFormats[this.formmaterIndex].baseCurrencyId;
+      const baseCurrencyId = this.displayFormats[this.settings.currency].baseCurrencyId;
       const fx = {
         usd: this.fxr.find(item => item.fromId == 1001101 && item.toId == baseCurrencyId).converter,
         gbp: this.fxr.find(item => item.fromId == 1001103 && item.toId == baseCurrencyId).converter,
@@ -142,7 +190,7 @@ export default {
     },
     dividends() {
       const instrumentDivValues = [];
-      const format = this.displayFormats[this.formmaterIndex];
+      const format = this.displayFormats[this.settings.currency];
       const formatter = new Intl.NumberFormat(format.locale, { style: "currency", currency: format.currency });
 
       const currentDate = new Date();
@@ -181,7 +229,7 @@ export default {
       let divSums = { ytd: 0, ttm: 0, l5y: 0, all: 0 };
 
       for (const t of this.transactions) {
-        if (!this.projectedDividends && t.date > currentDate) {
+        if (!this.settings.projectedDividends && t.date > currentDate) {
           continue;
         }
         if (t.type == "DIV" && (index = instrumentDivValues.findIndex(value => value.code == t.instrumentCode)) > -1) {
@@ -313,7 +361,7 @@ export default {
           currencyIndex = vCurrencies.findIndex(value => value.label == t.currencyCode);
           //console.log(`Will check ${t.id}>> STOCK:${stockIndex}, PORT:${portfolioIndex}, CURRENCY:${currencyIndex}`);
           if (stockIndex > -1 && portfolioIndex > -1 && currencyIndex > -1) {
-            const units = t.type == "BUY" ? t.units  : -t.units;
+            const units = t.type == "BUY" ? t.units : -t.units;
             const value = units * vInstruments[stockIndex].unitValue;
             let valueInBaseCurrency = 0;
             switch (t.currencyCode) {
@@ -345,7 +393,7 @@ export default {
       }
 
       // compact and sort instrument valuations + remove those with zero value
-      const instrumentsValuations = { labels: [], valuations: [], units: []};
+      const instrumentsValuations = { labels: [], valuations: [], units: [] };
       this.getCompactValuation(vInstruments, instrumentsValuations);
 
       // compact and sort currency valuations + remove those with zero value
@@ -356,7 +404,7 @@ export default {
       const portfolioValuations = { labels: [], valuations: [] };
       let portfoliosTotal = this.getCompactValuation(vPortfolios, portfolioValuations);
 
-      const format = this.displayFormats[this.formmaterIndex];
+      const format = this.displayFormats[this.settings.currency];
       const formatter = new Intl.NumberFormat(format.locale, { style: "currency", currency: format.currency });
       portfoliosTotal = formatter.format(portfoliosTotal);
       //
@@ -371,7 +419,7 @@ export default {
       if (this.dividends.instrumentAccummulations.length > 0) {
         const safeinstrumentAccummulations = this.dividends.instrumentAccummulations.slice();
 
-        switch (this.accumulatedDividendsRange) {
+        switch (this.settings.cumDiv) {
           case 0:
             seriesLabel = "Dividend (YTD)";
             safeinstrumentAccummulations.sort(function(a, b) {
@@ -478,7 +526,7 @@ export default {
         //let safeinstrumentAccummulations = this.dividends.instrumentAccummulations.slice();
         let dataSource = null;
         let shift = 0;
-        switch (this.timeIncrements) {
+        switch (this.settings.divFreq) {
           case 0:
             dataSource = this.dividends.dividendTimelineData.monthly;
             shift = 15 * 24 * 60 * 60 * 1000; //millis
@@ -587,10 +635,10 @@ export default {
         const earliestAllowedQuater = new Date(currentYear - NUMBER_OF_YEARS + 1, 0, 1);
         let startIndex = 0;
         const yearLabels = [];
-        for(; startIndex < ds.dates.length; startIndex++){
-          if(ds.dates[startIndex] >= earliestAllowedQuater){
-            for(let j = ds.dates[startIndex].getFullYear();  j <= currentYear; j++){
-              yearLabels.push(j + '');
+        for (; startIndex < ds.dates.length; startIndex++) {
+          if (ds.dates[startIndex] >= earliestAllowedQuater) {
+            for (let j = ds.dates[startIndex].getFullYear(); j <= currentYear; j++) {
+              yearLabels.push(j + "");
             }
             break;
           }
@@ -722,10 +770,11 @@ export default {
   },
   data() {
     return {
-      accumulatedDividendsRange: 3, //0- ytd, 1- TTM, 2 - l5y, 3 - all
-      timeIncrements: 3, // 0 - monthly, 1 - quaterly, 2 - half-yearly, 3 - yearly
-      localeIndex: 0,
-      projectedDividends: true,
+      cumDivOptions: ["Year to date", "Trailing 12 months", "Last 5 years", "Entire Range"],
+      divFreqOptions: ["Monthly", "Quarterly", "Half-yearly", "Yearly"],
+      currencyOptions: ["British Pounds", "US Dollars"],
+      settings: { cumDiv: 3, divFreq: 2, currency: 0, projectedDividends: true },
+      dialogSettings: { cumDiv: 3, divFreq: 2, currency: 0, projectedDividends: true },
       chartColors: { bsb: "rgba(0,123,255, 1.0)", red: "rgb(255, 99, 132)", orange: "rgb(255, 159, 64)", yellow: "rgb(255, 205, 86)", green: "rgb(75, 192, 192)", blue: "rgb(54, 162, 235)", purple: "rgb(153, 102, 255)", grey: "rgb(231,233,237)" }
     };
   },
@@ -774,7 +823,7 @@ export default {
         if (safeValuations[idx].valuation > 0) {
           results.labels.push(safeValuations[idx].label);
           results.valuations.push(safeValuations[idx].valuation);
-          if(results.units != null){
+          if (results.units != null) {
             results.units.push(safeValuations[idx].units);
           }
           total += safeValuations[idx].valuation;
@@ -783,6 +832,12 @@ export default {
         }
       }
       return total;
+    },
+    updateDashboardSettings() {
+      this.settings = { cumDiv: this.dialogSettings.cumDiv, divFreq: this.dialogSettings.divFreq, currency: this.dialogSettings.currency, projectedDividends: this.dialogSettings.projectedDividends };
+    },
+    cancelDialog() {
+      this.dialogSettings = { cumDiv: this.settings.cumDiv, divFreq: this.settings.divFreq, currency: this.settings.currency, projectedDividends: this.settings.projectedDividends };
     }
   },
   mounted() {
