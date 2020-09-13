@@ -1,5 +1,6 @@
 /*
  * 2020.03.31  - Created
+ * 2020.09.13  - Moved sectorId attribute to Entity
  */
 package mx4.springboot.model;
 
@@ -38,8 +39,6 @@ public class Instrument {
     
     private String countryId;
     
-    private String sectorId;
-
     public Type getType() {
         return type;
     }
@@ -78,14 +77,6 @@ public class Instrument {
 
     public void setCountryId(String countryId) {
         this.countryId = countryId;
-    }
-
-    public String getSectorId() {
-        return sectorId;
-    }
-
-    public void setSectorId(String sectorId) {
-        this.sectorId = sectorId;
     }
     
     public String getCode() {

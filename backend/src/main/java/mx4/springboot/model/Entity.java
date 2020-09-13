@@ -1,5 +1,6 @@
 /*
  * 2020.03.31  - Created
+ * 2020.09.13  - Added sectorId attribute from Instrument
  */
 package mx4.springboot.model;
 
@@ -15,6 +16,8 @@ public class Entity {
     private String description;
 
     private String id;
+    
+    private String sectorId;
 
     public Entity(String name, String description, String id) {
         this.name = name;
@@ -47,6 +50,14 @@ public class Entity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+    
+    public String getSectorId() {
+        return sectorId;
+    }
+
+    public void setSectorId(String sectorId) {
+        this.sectorId = sectorId;
     }
 
 }

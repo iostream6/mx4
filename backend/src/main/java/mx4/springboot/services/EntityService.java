@@ -70,6 +70,7 @@ public class EntityService {
             final Entity entity = optional.get();
             entity.setName(e.getName());
             entity.setDescription(e.getDescription());
+            entity.setSectorId(e.getSectorId());
             return ResponseEntity.ok(entityRepository.save(entity));
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -112,7 +113,6 @@ public class EntityService {
             ii.setType(i.getType());
             ii.setCurrencyId(i.getCurrencyId());
             ii.setCode(i.getCode());
-            ii.setSectorId(i.getSectorId());
             ii.setEntityId(i.getEntityId());
             ii.setDescription(i.getDescription());
             ii.setCountryId(i.getCountryId());
