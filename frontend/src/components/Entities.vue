@@ -2,6 +2,8 @@
 ***  2020.05.24  - Created 
 ***  2020.05.27  - Implemented 
 ***  2020.05.30  - Use FA 5.0  and simplified/centralised add/edit/delete actions for domain objects
+***  2020.09.12  - Switch table to Bootstrap-vue component and assign allignment a & widths using https://github.com/bootstrap-vue/bootstrap-vue/pull/531
+***                Now supports Entity (add) and Instruments (add/edit).
 -->
 <template>
   <div id="layoutSidenav_content">
@@ -14,15 +16,56 @@
               <h3 class="text-primary float-left">Instruments</h3>
             </div>
             <div class="col-lg-3">
-              <button class="btn btn-primary float-right" v-on:click="showAddDialog=true">
-                <font-awesome-icon :icon="['fas', 'plus-square']" />&nbsp;&nbsp; Add New
-              </button>
+              <b-button-group class="ml-3 float-right">
+                <b-button variant="primary" v-b-modal.x-modal>
+                  <font-awesome-icon :icon="['fas', 'plus-square']" />
+                </b-button>
+                <b-button :variant="selectedRows.length != 1 || entityMode ? 'secondary' : 'primary'" :disabled="selectedRows.length != 1 || entityMode" @click.prevent="makeSafeFormData();$bvModal.show('x-modal')">
+                  <font-awesome-icon :icon="['fas', 'edit']" />
+                </b-button>
+                <b-button :variant='secondary' :disabled="true" @click="deleteInstruments()">
+                  <font-awesome-icon :icon="['fas', 'trash-alt']" />
+                </b-button>
+              </b-button-group>
+
+              <b-button-group class="ml-3 float-right">
+                <b-button :variant="entityMode ? 'secondary' : 'primary'" :disabled="entityMode" @click.prevent="switchMode()">
+                  <font-awesome-icon :icon="['fas', 'chess-pawn']" />
+                </b-button>
+                <b-button :variant="entityMode==false ? 'secondary' : 'primary'" :disabled="!entityMode" @click.prevent="switchMode()">
+                  <font-awesome-icon :icon="['fas', 'chess-queen']" />
+                </b-button>
+              </b-button-group>
             </div>
           </div>
           <hr class="bg-primary" />
           <div class="row">
             <div class="col-lg-12">
-              <table class="table table-bordered table-striped">
+              <b-table
+                ref="ttable"
+                :tbody-tr-class="rowClass"
+                :striped="tableProps.striped"
+                :bordered="tableProps.bordered"
+                :borderless="tableProps.borderless"
+                :outlined="tableProps.outlined"
+                :selectable="tableProps.selectable"
+                :small="tableProps.small"
+                :hover="tableProps.hover"
+                :dark="tableProps.dark"
+                :fixed="tableProps.fixed"
+                :items="supportedInstruments"
+                :fields="tableFields"
+                :thead-tr-class="tableProps.headerRowClass"
+                :sort-by="tableProps.sortBy"
+                :sort-desc="tableProps.sortDesc"
+                :primary-key="tableProps.primaryKey"
+                :filter="tableProps.filter"
+                :filterIncludedFields="tableProps.filterOn"
+                :current-page="tableProps.currentPage"
+                :per-page="tableProps.perPage"
+                @row-selected="onRowSelected"
+              ></b-table>
+              <!--<table class="table table-bordered table-striped">
                 <colgroup>
                   <col span="1" style="width: 5%;" />
                   <col span="1" style="width: 50%;" />
@@ -38,7 +81,6 @@
                     <th class="text-center">Type</th>
                     <th class="text-center">Currency</th>
                     <th class="text-center">Sector</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -48,198 +90,77 @@
                     <td>{{i.type}}</td>
                     <td>{{currencies.find(item => item.id == i.currencyId).code}}</td>
                     <td class="text-left">{{sectors.find(item => item.id == i.sectorId ).name}}</td>
-                    <td>
-                      <a href="#" class="text-success" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(false)">
-                        <font-awesome-icon :icon="['fas', 'edit']" />
-                      </a> &nbsp; &nbsp; &nbsp; &nbsp;
-                      <!-- Call a function that first makes a safe copy before it launches the dialog-->
-                      <a href="#" class="text-danger" v-on:click.prevent="selectedIndex=index; showEditDialogLauncher(true)">
-                        <font-awesome-icon :icon="['fas', 'trash-alt']" />
-                      </a>
-                    </td>
                   </tr>
                 </tbody>
-              </table>
+              </table>-->
             </div>
           </div>
         </div>
       </main>
     </div>
 
+    <!-- ADD/EDIT MODAL  -->
     <div>
-      <!-- Modals see https://getbootstrap.com/docs/4.0/components/modal/-->
-      <!-- ADD INSTRUMENT MODAL -->
-      <div id="overlay" v-if="showAddDialog">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title" id="exampleModalLabel">Add New Instrument</h4>
-              <button type="button" class="close" v-on:click="cancelDialog" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+      <b-modal id="x-modal" @ok="validateModalForm($event)" @hidden="cancelDialog()" centered v-bind:title="entityMode ? 'Add New Entity' : instrument.id == null ? 'Add New Instrument'  : 'Edit Instrument'">
+        <form>
+          <!-- The below will only activate in entity mode -->
+          <b-form-group v-if="entityMode" label="Name:" label-for="inputEntityName">
+            <!-- use instrument code var to store entity name when working in entity mode -->
+            <b-form-input id="inputEntityName" v-model="instrument.code" class="form-control" :state="errorInfo['is-code']" />
+          </b-form-group>
+          <b-form-group v-if="entityMode" label="Sector:" label-for="inputSector">
+            <b-form-select id="inputSector" v-model="instrument.sectorIndex" :state="errorInfo['is-sectorIndex']">
+              <b-form-select-option v-for="(sector, index) in sectors" v-bind:key="index" v-bind:value="index">{{sector.name}}</b-form-select-option>
+            </b-form-select>
+          </b-form-group>
+          <!-- 
+            //
+            //
+          -->
+          <!-- The below will only activate in entity mode -->
+          <b-form-group v-if="entityMode==false">
+            <label for="inputEntity">Entity:</label>
+            <b-form-select id="inputEntity" v-model="instrument.entityIndex" :state="errorInfo['is-entityIndex']">
+              <b-form-select-option :value="null" disabled>Select an option</b-form-select-option>
+              <b-form-select-option v-for="(entity, index) in entities" v-bind:key="index" v-bind:value="index">{{entity.name}}</b-form-select-option>
+            </b-form-select>
+          </b-form-group>
+          <div class="row" v-if="entityMode==false">
+            <div class="form-group col-md-6 text-left">
+              <label for="inputType">Type:</label>
+              <b-form-select id="inputType" v-model="instrument.type" :state="errorInfo['is-type']">
+                <b-form-select-option v-for="(typ, index) in instrumentTypes" v-bind:key="index" v-bind:value="typ">{{typ}}</b-form-select-option>
+              </b-form-select>
             </div>
-            <div class="modal-body p-4">
-              <form v-on:submit.prevent="add()">
-                <div class="form-group text-left">
-                  <label for="inputEntity">Entity:</label>
-                  <select id="inputEntity" class="form-control" v-model="newInstrument.entityIndex" required>
-                    <option v-for="(entity, index) in entities" v-bind:key="index" v-bind:value="index">{{entity.name}}</option>
-                  </select>
-                </div>
-                <div class="form-group text-left">
-                  <label for="inputDescription">Description:</label>
-                  <input id="inputDescription" v-model="newInstrument.description" class="form-control" required minlength="2" autofocus />
-                </div>
-                <div class="row">
-                  <div class="form-group col-md-6 text-left">
-                    <label for="inputType">Type:</label>
-                    <select id="inputType" class="form-control" v-model="newInstrument.typeIndex" required>
-                      <option v-for="(typ, index) in instrumentTypes" v-bind:key="index" v-bind:value="index">{{typ}}</option>
-                    </select>
-                  </div>
-                  <div class="form-group col-md-6 text-left">
-                    <label for="inputCurrency">Currency:</label>
-                    <select id="inputCurrency" class="form-control" v-model="newInstrument.currencyIndex" required>
-                      <option v-for="(currency, index) in currencies" v-bind:key="index" v-bind:value="index">{{currency.code}}</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="form-group col-md-6 text-left">
-                    <label for="inputCode">Code:</label>
-                    <input id="inputCode" v-model="newInstrument.code" class="form-control" required autofocus />
-                  </div>
-                  <div class="form-group col-md-6 text-left">
-                    <!--<label for="inputValue">Value:</label>
-                    <input id="inputValue" v-model="newInstrument.value" class="form-control" required pattern="^\d+(\.\d+)?" minlength="2" autofocus />-->
-                    <label for="inputDomicile">Domicile:</label>
-                    <select id="inputDomicile" class="form-control" v-model="newInstrument.domicileIndex" required>
-                      <option v-for="(domicile, index) in instrumentDomiciles" v-bind:key="index" v-bind:value="index">{{domicile.name}}</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="form-group text-left">
-                  <label for="inputSector">Sector:</label>
-                  <select id="inputSector" class="form-control" v-model="newInstrument.sectorIndex" required>
-                    <option v-for="(sector, index) in sectors" v-bind:key="index" v-bind:value="index">{{sector.name}}</option>
-                  </select>
-                </div>
-                <!-- We could trigger the event on this directly but we want footer/validation so we show the footer, hide this
-                and delegate back to this button (submit) to enable inbuilt validation-->
-                <div class="form-group" hidden>
-                  <button id="addButton" class="btn btn-primary btn-block btn-lg" type="submit">Edit</button>
-                </div>
-              </form>
-            </div>
-            <div class="modal-footer">
-              <!-- we want to have the nornal footer buttons, the add option in the footer will trigger click
-              event in the actual form submit button. Declaring the footer inside the form will avoid this but will
-              render and a short hr footer
-              -->
-              <button type="button" class="btn btn-secondary" v-on:click="cancelDialog">Cancel</button>
-              <button type="button" class="btn btn-primary" v-on:click="triggerClickEvent('addButton')">Save</button>
+            <div class="form-group col-md-6 text-left">
+              <label for="inputCurrency">Currency:</label>
+              <b-form-select id="inputCurrency" v-model="instrument.currencyIndex" :state="errorInfo['is-currencyIndex']">
+                <b-form-select-option v-for="(currency, index) in currencies" v-bind:key="index" v-bind:value="index">{{currency.code}}</b-form-select-option>
+              </b-form-select>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- EDIT INSTRUMENT MODAL -->
-      <div id="overlay" v-if="showEditDialog">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title" id="exampleModalLabel">Edit Instrument</h4>
-              <button type="button" class="close" v-on:click="cancelDialog" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+          <div class="row" v-if="entityMode==false">
+            <div class="form-group col-md-6 text-left">
+              <label for="inputCode">Code:</label>
+              <b-form-input id="inputCode" v-model="instrument.code" class="form-control" :state="errorInfo['is-code']" />
             </div>
-            <div class="modal-body p-4">
-              <form v-on:submit.prevent="edit(false)">
-                <div class="form-group text-left">
-                  <label for="inputEntity">Entity:</label>
-                  <select id="inputEntity" class="form-control" v-model="safeEditInfo.entityIndex" required>
-                    <option v-for="(entity, index) in entities" v-bind:key="index" v-bind:value="index">{{entity.name}}</option>
-                  </select>
-                </div>
-                <div class="form-group text-left">
-                  <label for="inputDescription">Description:</label>
-                  <input id="inputDescription" v-model="safeEditInfo.data.description" class="form-control" required minlength="2" autofocus />
-                </div>
-                <div class="row">
-                  <div class="form-group col-md-6 text-left">
-                    <label for="inputType">Type:</label>
-                    <select id="inputType" class="form-control" v-model="safeEditInfo.data.type" required>
-                      <option v-for="(typ, index) in instrumentTypes" v-bind:key="index" v-bind:value="typ">{{typ}}</option>
-                    </select>
-                  </div>
-                  <div class="form-group col-md-6 text-left">
-                    <label for="inputCurrency">Currency:</label>
-                    <select id="inputCurrency" class="form-control" v-model="safeEditInfo.currencyIndex" required>
-                      <option v-for="(currency, index) in currencies" v-bind:key="index" v-bind:value="index">{{currency.code}}</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="form-group col-md-6 text-left">
-                    <label for="inputCode">Code:</label>
-                    <input id="inputCode" v-model="safeEditInfo.data.code" class="form-control" required autofocus />
-                  </div>
-                  <div class="form-group col-md-6 text-left">
-                    <!--<label for="inputValue">Value:</label>
-                    <input id="inputValue" v-model="newInstrument.value" class="form-control" required pattern="^\d+(\.\d+)?" minlength="2" autofocus />-->
-                    <label for="inputDomicile">Domicile:</label>
-                    <select id="inputDomicile" class="form-control" v-model="safeEditInfo.domicileIndex" required>
-                      <option v-for="(domicile, index) in instrumentDomiciles" v-bind:key="index" v-bind:value="index">{{domicile.name}}</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="form-group text-left">
-                  <label for="inputSector">Sector:</label>
-                  <select id="inputSector" class="form-control" v-model="safeEditInfo.sectorIndex" required>
-                    <option v-for="(sector, index) in sectors" v-bind:key="index" v-bind:value="index">{{sector.name}}</option>
-                  </select>
-                </div>
-                <!-- We could trigger the event on this directly but we want footer/validation so we show the footer, hide this
-                and delegate back to this button (submit) to enable inbuilt validation-->
-                <div class="form-group" hidden>
-                  <button id="editButton" class="btn btn-primary btn-block btn-lg" type="submit">Edit</button>
-                </div>
-              </form>
-            </div>
-            <div class="modal-footer">
-              <!-- we want to have the nornal footer buttons, the add option in the footer will trigger click
-              event in the actual form submit button. Declaring the footer inside the form will avoid this but will
-              render and a short hr footer
-              -->
-              <button type="button" class="btn btn-secondary" v-on:click="cancelDialog">Cancel</button>
-              <button type="button" class="btn btn-primary" v-on:click="triggerClickEvent('editButton')">Save</button>
+            <div class="form-group col-md-6 text-left">
+              <label for="inputDomicile">Domicile:</label>
+              <b-form-select id="inputDomicile" v-model="instrument.domicileIndex" :state="errorInfo['is-domicileIndex']">
+                <b-form-select-option v-for="(domicile, index) in instrumentDomiciles" v-bind:key="index" v-bind:value="index">{{domicile.name}}</b-form-select-option>
+              </b-form-select>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- DELETE BROKER MODAL -->
-      <div id="overlay" v-if="showDeleteDialog">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title" id="exampleModalLabel">Delete Instrument</h4>
-              <button type="button" class="close" v-on:click="cancelDialog" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body p-4">
-              <div class="form-group">
-                <div class="alert alert-danger text-left">This action will delete '{{safeEditInfo.data.description}}'</div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" v-on:click="cancelDialog">Cancel</button>
-              <button type="button" class="btn btn-primary" v-on:click="edit(true)">Delete</button>
-            </div>
-          </div>
-        </div>
-      </div>
+          <!-- 
+            //
+            //
+          -->
+          <!-- The below will always be visible in entity/instrument mode -->
+          <b-form-group label="Description:" label-for="inputDescription">
+            <b-form-input id="inputDescription" v-model="instrument.description" class="form-control" :state="errorInfo['is-description']" />
+          </b-form-group>
+        </form>
+      </b-modal>
     </div>
   </div>
 </template>
@@ -253,46 +174,125 @@ export default {
   name: "Entities",
   data() {
     return {
-      newInstrument: {
+      instrument: {
         code: null,
         entityIndex: null,
         description: null,
-        typeIndex: 0,
-        domicileIndex: 0,
-        currencyIndex: 0,
-        sectorIndex: null
-      },
-      safeEditInfo: {
-        data: {
-          id: null,
-          code: null,
-          description: null,
-          type: null
-          //
-          //entityId: //  countryId: //   currencyId: //  sectorId: null
-        },
-        entityIndex: null,
+        type: null,
         domicileIndex: null,
         currencyIndex: null,
         sectorIndex: null
       },
-
-      showAddDialog: false,
-      showEditDialog: false,
-      showDeleteDialog: false,
-      selectedIndex: -1
+      errorInfo: {
+        "is-code": null,
+        "is-entityIndex": null,
+        "is-sectorIndex": null,
+        "is-description": null,
+        "is-currencyIndex": null,
+        "is-domicileIndex": null,
+        "is-type": null,
+        //
+        "is-valid": false
+      },
+      selectedRows: [],
+      entityMode: false,
+      tableFields: [
+        {
+          key: "code",
+          label: "Code",
+          thStyle: {
+            width: "110px"
+          },
+          sortable: true
+        },
+        {
+          key: "description",
+          label: "Description",
+          class: "text-left",
+          sortable: true
+        },
+        {
+          key: "type",
+          thStyle: {
+            width: "110px"
+          },
+          sortable: true
+        }
+        // {
+        //   key: "currencyCode",
+        //   label: "Currency"
+        //   //sortable: true
+        //   // formatter: value => {
+        //   //   return value.code;
+        //   // }
+        // },
+        // {
+        //   key: "units"
+        //   //sortable: true
+        // }
+      ],
+      //additional table props
+      tableProps: {
+        primaryKey: "id",
+        striped: true,
+        bordered: true,
+        borderless: false,
+        outlined: true,
+        small: true,
+        hover: false,
+        dark: false,
+        fixed: true,
+        selectable: true,
+        sortBy: "date",
+        sortDesc: false,
+        filter: null,
+        filterOn: [],
+        headerRowClass: "bg-primary text-light",
+        currentPage: 1,
+        perPage: 50,
+        pageOptions: [10, 20, 30, 50]
+      }
     };
   },
   computed: {
     ...mapState(["user", "authenticated", "currencies", "entities", "isBasicAdminDataGotten", "supportedInstruments", "instrumentTypes", "instrumentDomiciles", "sectors"])
   },
   methods: {
-    //getListIndexById: utils.getListIndexById,
     //
-    //
-    triggerClickEvent(targetId) {
-      document.getElementById(targetId).click();
+    onRowSelected(items) {
+      this.selectedRows = items;
     },
+    //
+    //
+    //
+    validateModalForm(event) {
+      //reset before next check
+      for (const prop in this.errorInfo) {
+        this.errorInfo[prop] = null;
+      }
+      this.errorInfo["is-valid"] = true;
+      const inputs = this.entityMode ? ["code", "sectorIndex"] : ["entityIndex", "type", "currencyIndex", "code", "domicileIndex", "description"];
+      for (const input of inputs) {
+        if (this.instrument[input] == null) {
+          //this.errorInfo[input] = `Input required`;
+          this.errorInfo[`is-${input}`] = false;
+          this.errorInfo["is-valid"] = false;
+        } else {
+          //this.errorInfo[input] = null;
+          this.errorInfo[`is-${input}`] = null;
+        }
+      }
+      if (this.errorInfo["is-valid"] == false) {
+        event.preventDefault(); //only block ok click if validation issue
+        return;
+      }
+      if (this.instrument.id == null) {
+        this.add();
+      } else {
+        this.edit();
+      }
+    },
+
     //
     //
     //
@@ -307,31 +307,12 @@ export default {
     //
     //
     cancelDialog() {
-      this.newInstrument = {
+      console.log("Ask Cancel");
+      this.instrument = {
         code: null,
         entityIndex: null,
         description: null,
-        typeIndex: 0,
-        domicileIndex: 0,
-        currencyIndex: 0,
-        sectorIndex: null
-      };
-
-      this.showAddDialog = false;
-      this.showEditDialog = false;
-      this.showDeleteDialog = false;
-      this.selectedIndex = -1;
-
-      this.safeEditInfo = {
-        data: {
-          id: null,
-          code: null,
-          description: null,
-          type: null
-          //
-          //entityId: //  countryId: //   currencyId: //  sectorId: null
-        },
-        entityIndex: null,
+        type: null,
         domicileIndex: null,
         currencyIndex: null,
         sectorIndex: null
@@ -340,24 +321,39 @@ export default {
     //
     //
     //
+    switchMode() {
+      this.entityMode = !this.entityMode;
+    },
+    //
+    //
+    //
     async add() {
-      // //e.preventDefault() - already blocked with modifier
+      //e.preventDefault()
       await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
-        const instr = this.newInstrument;
-        const requestInfo = {
-          data: {
-            type: this.instrumentTypes[instr.typeIndex],
-            currencyId: this.currencies[instr.currencyIndex].id,
-            code: this.newInstrument.code,
-            entityId: this.entities[instr.entityIndex].id,
-            countryId: this.instrumentDomiciles[instr.domicileIndex].code,
-            sectorId: this.sectors[instr.sectorIndex].id,
-            description: instr.description
-          },
-          url: `/admin/instruments`,
-          list: "supportedInstruments"
-        };
+        const instr = this.instrument;
+        const requestInfo = this.entityMode
+          ? {
+              data: {
+                name: instr.code,
+                description: instr.description,
+                sectorId: this.sectors[instr.sectorIndex].id
+              },
+              url: `/admin/entities`,
+              list: "entities"
+            }
+          : {
+              data: {
+                type: instr.type,
+                currencyId: this.currencies[instr.currencyIndex].id,
+                code: instr.code,
+                entityId: this.entities[instr.entityIndex].id,
+                countryId: this.instrumentDomiciles[instr.domicileIndex].code,
+                description: instr.description
+              },
+              url: `/admin/instruments`,
+              list: "supportedInstruments"
+            };
 
         this.addAction(requestInfo);
         this.cancelDialog();
@@ -366,26 +362,28 @@ export default {
         this.$router.push("/");
       }
     },
-    //
-    //
-    //
-    async edit(isDelete) {
+    async edit() {
       // e.preventDefault() - already blocked with modifier
       await this.ensureAuthorized(); //will updated authenticated state
       if (this.authenticated == true) {
-        //map ui selections to persistence model attributes
-        const data = this.safeEditInfo.data;
+        // //make a safe copy - async might not return before bubbled cancel is called
+        // const safeCopy = {};
+        // for (var prop in this.instrument) {
+        //   safeCopy[prop] = this.instrument[prop];
+        // }
 
-        data.currencyId = this.currencies[this.safeEditInfo.currencyIndex].id;
-        data.entityId = this.entities[this.safeEditInfo.entityIndex].id;
-        data.countryId = this.instrumentDomiciles[this.safeEditInfo.domicileIndex].code;
-        data.sectorId = this.sectors[this.safeEditInfo.sectorIndex].id;
+        //processing control params
+        const editInfo = {data: {}, url: `/admin/instrument/${this.instrument.id}`, list: "supportedInstruments", index: this.supportedInstruments.findIndex(i => i.id == this.instrument.id)  /* length  */ };
 
-        if (isDelete) {
-          this.deleteAction(this.safeEditInfo);
-        } else {
-          this.editAction(this.safeEditInfo);
+        //add ui selections mapped to persistence model attributes
+        for (const input of ["id", "code", "description", "type"]) {
+          editInfo.data[input] = this.instrument[input];
         }
+        editInfo.data.currencyId = this.currencies[this.instrument.currencyIndex].id;
+        editInfo.data.entityId = this.entities[this.instrument.entityIndex].id;
+        editInfo.data.countryId = this.instrumentDomiciles[this.instrument.domicileIndex].code;
+
+        this.editAction(editInfo);
         this.cancelDialog();
       } else {
         this.cancelDialog();
@@ -394,55 +392,23 @@ export default {
     },
     //
     //
-    //
-    showEditDialogLauncher(isDelete) {
-      //make a safe copy of the selected object - this avoids:
+    makeSafeFormData() {
+      //make a safe copy of the selected object. This is called before edit to avoid:
       // a) Messing with the Vuex state directly if we use the currently rendered object (rather than its safe copy)
       // b) Ensure that if a user cancels the edit mid-way, we don't have to worry about restoring a bound object
-      const selectedObject = this.supportedInstruments[this.selectedIndex];
 
-      this.safeEditInfo = {
-        data: {
-          id: selectedObject.id,
-          code: selectedObject.code,
-          description: selectedObject.description,
-          type: selectedObject.type
-          //
-          //
-          //will be populated layer, after UI closed
-          // currencyId: //  entityId: // countryId: // sectorId:
-        },
-        entityIndex: this.entities.findIndex(item => item.id == selectedObject.entityId),
-        domicileIndex: this.instrumentDomiciles.findIndex(domicile => domicile.code == selectedObject.countryId),
-        currencyIndex: this.currencies.findIndex(item => item.id == selectedObject.currencyId),
-        sectorIndex: this.sectors.findIndex(item => item.id == selectedObject.sectorId),
-        //
-        index: this.selectedIndex,
-        length: 1,
-        url: `/admin/instrument/${selectedObject.id}`,
-        list: "supportedInstruments"
-      };
-      if (isDelete) {
-        this.showDeleteDialog = true;
-      } else {
-        //trigger the modal Edit dialog
-        this.showEditDialog = true;
+      const selectedObj = this.selectedRows[0];
+      const safeCopy = this.instrument;
+
+      for (const input of ["id", "code", "description", "type"]) {
+        safeCopy[input] = selectedObj[input];
       }
+
+      safeCopy["entityIndex"] = this.entities.findIndex(item => item.id == selectedObj.entityId);
+      safeCopy["domicileIndex"] = this.instrumentDomiciles.findIndex(domicile => domicile.code == selectedObj.countryId);
+      safeCopy["currencyIndex"] = this.currencies.findIndex(item => item.id == selectedObj.currencyId);
     }
   }
-  // created() {
-  //   if (!this.isBasicAdminDataGotten) {
-  //     const thisInstanceReference = this;
-  //     //will updated authenticated state
-  //     this.ensureAuthorized().then(function() {
-  //       if (thisInstanceReference.authenticated == true) {
-  //         thisInstanceReference.getBasicAdminDataAction();
-  //       } else {
-  //         thisInstanceReference.$router.push("/");
-  //       }
-  //     });
-  //   }
-  // }
 };
 </script>
 

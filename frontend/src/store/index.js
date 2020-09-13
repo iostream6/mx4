@@ -36,6 +36,7 @@ export default new Vuex.Store({
     brokers: [],
     portfolios: [],
     currencies: [],
+    entities: [],
     fxr: [],
     transactions: [],
     values: [],

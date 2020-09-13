@@ -528,7 +528,6 @@ export default {
     // //
     // //
     prepareEditDialog(isClone) {
-      console.log(`Calling Edit`);
       // let parameter = null;
       const selectedTransaction = this.selectedRows[0];
       const se = this.transaction;
