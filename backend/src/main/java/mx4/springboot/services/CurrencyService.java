@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import mx4.springboot.persistence.ExchangeRepository;
-import mx4.springboot.services.spi.ExchangeRateServiceProvider;
 import mx4.springboot.model.Currency;
 import mx4.springboot.model.Currency.Exchange;
 import org.openide.util.Lookup;
@@ -23,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import mx4.springboot.services.spi.FXRatesProvider;
 
 /**
  *
@@ -64,9 +64,9 @@ public class CurrencyService {
 
     @PutMapping("/exchanges")
     public List<Exchange> updateExchangRates() {
-        ExchangeRateServiceProvider erp = Lookup.getDefault().lookup(ExchangeRateServiceProvider.class);
+        FXRatesProvider erp = Lookup.getDefault().lookup(FXRatesProvider.class);
         if (erp != null) {
-            final List<Exchange> exchanges = erp.fetchExchangeRates(currencyList);
+            final List<Exchange> exchanges = erp.getExchangeRates(currencyList);
             if (exchanges.isEmpty() == false) {
                 exchangeRepository.deleteAll();
                 exchangeRepository.saveAll(exchanges);

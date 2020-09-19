@@ -22,8 +22,8 @@ import org.openide.util.lookup.ServiceProvider;
  *
  * @author Ilamah, Osho
  */
-@ServiceProvider(service = ExchangeRateServiceProvider.class, position = 10)
-public class APIExchangeRateServiceProvider implements ExchangeRateServiceProvider {
+@ServiceProvider(service = FXRatesProvider.class, position = 10)
+public class APIExchangeRateServiceProvider implements FXRatesProvider {
 //https://api.exchangeratesapi.io/latest?base=USD&symbols=USD,GBP
 //"https://api.exchangeratesapi.io/latest?";
 //https://api.exchangeratesapi.io/history?base=EUR&start_at=2020-04-02&end_at=2020-04-02&symbols=USD,GBP,EUR
@@ -35,7 +35,7 @@ public class APIExchangeRateServiceProvider implements ExchangeRateServiceProvid
     private static final String ACCEPT_CHARSET_VALUE = java.nio.charset.StandardCharsets.UTF_8.name();
 
     @Override //OK
-    public List<Exchange> fetchExchangeRates(List<Currency> currencies) {
+    public List<Exchange> getExchangeRates(List<Currency> currencies) {
         final List<Exchange> exchanges = new ArrayList<>();
         for (Currency c : currencies) {
             if (c.getCode().endsWith("X") == false) {
