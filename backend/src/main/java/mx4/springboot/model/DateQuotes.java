@@ -5,11 +5,13 @@ package mx4.springboot.model;
 
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  *
  * @author Ilamah, Osho
  */
+@Document(collection = "quote")
 public class DateQuotes {
     private List<Quote> quotes;
     private LocalDate date;

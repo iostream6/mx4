@@ -60,6 +60,6 @@ public class Quote {
     }
 
     public static enum QuoteType {
-        EOD, EOM
+        EOD, EOM, ITD
     }
 }
