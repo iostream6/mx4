@@ -9,21 +9,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import mx4.springboot.model.Currency;
 import mx4.springboot.model.Currency.Exchange;
-import org.openide.util.lookup.ServiceProvider;
+import mx4.springboot.model.Quote;
 
 /**
  * Exchange rate service provider based on exchangerates.io API service.
  *
  * @author Ilamah, Osho
  */
-@ServiceProvider(service = FXRatesProvider.class, position = 10)
-public class APIExchangeRateServiceProvider implements FXRatesProvider {
+//@ServiceProvider(service = FXQuoteProvider.class, position = 10)
+public class APIExchangeRateServiceProvider implements FXQuoteProvider {
 //https://api.exchangeratesapi.io/latest?base=USD&symbols=USD,GBP
 //"https://api.exchangeratesapi.io/latest?";
 //https://api.exchangeratesapi.io/history?base=EUR&start_at=2020-04-02&end_at=2020-04-02&symbols=USD,GBP,EUR
@@ -106,6 +107,11 @@ public class APIExchangeRateServiceProvider implements FXRatesProvider {
             }
         }
         return exchanges;
+    }
+
+    @Override
+    public List<Exchange> getExchangeRates(List<Currency> currencies, LocalDate startDate, LocalDate endDate, Quote.QuoteType type) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     //
