@@ -68,12 +68,12 @@ public class CurrencyService {
 
     @PutMapping("/exchanges")
     public List<Exchange> updateExchangRates() {
-        final List<Exchange> exchanges = fxp.getExchangeRates(currencyList);
-        if (exchanges.isEmpty() == false) {
-            exchangeRepository.deleteAll();
-            exchangeRepository.saveAll(exchanges);
-            return exchanges;
-        }
+//        final List<Exchange> exchanges = fxp.getExchangeRates(currencyList);
+//        if (exchanges.isEmpty() == false) {
+//            exchangeRepository.deleteAll();
+//            exchangeRepository.saveAll(exchanges);
+//            return exchanges;
+//        }
         return Collections.EMPTY_LIST;
     }
 

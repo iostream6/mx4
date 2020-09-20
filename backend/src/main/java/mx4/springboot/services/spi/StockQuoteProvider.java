@@ -21,7 +21,8 @@ public interface StockQuoteProvider {
      * @param startDate the start date
      * @param endDate the end date
      * @param type the quote type
-     * @return null if an error occurs or else a list of DateQuotes
+     * @param failed a list which will be populated with symbols for which quotes could not be successfully retrieved
+     * @return if successful, a list of <code>DateQuotes</code>, ordered by date from oldest to newest, else an empty list
      */
-    public List<DateQuotes> getStockQuotes(List<String> symbols, LocalDate startDate, LocalDate endDate, QuoteType type);
+    public List<DateQuotes> getStockQuotes(List<String> symbols, LocalDate startDate, LocalDate endDate, QuoteType type, List<String> failed);
 }
