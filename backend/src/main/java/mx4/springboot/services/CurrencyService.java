@@ -13,7 +13,6 @@ import java.util.Optional;
 import mx4.springboot.persistence.ExchangeRepository;
 import mx4.springboot.model.Currency;
 import mx4.springboot.model.Currency.Exchange;
-import org.openide.util.Lookup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +21,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import mx4.springboot.services.spi.FXRatesProvider;
+import mx4.springboot.services.spi.FXQuoteProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  *
@@ -36,6 +36,10 @@ public class CurrencyService {
     private ExchangeRepository exchangeRepository;
 
     private static final List<Currency> currencyList;
+
+    @Autowired
+    @Qualifier("default")
+    private FXQuoteProvider fxp;
 
     @GetMapping("/currencies")
     public List<Currency> readAll() {
@@ -64,14 +68,11 @@ public class CurrencyService {
 
     @PutMapping("/exchanges")
     public List<Exchange> updateExchangRates() {
-        FXRatesProvider erp = Lookup.getDefault().lookup(FXRatesProvider.class);
-        if (erp != null) {
-            final List<Exchange> exchanges = erp.getExchangeRates(currencyList);
-            if (exchanges.isEmpty() == false) {
-                exchangeRepository.deleteAll();
-                exchangeRepository.saveAll(exchanges);
-                return exchanges;
-            }
+        final List<Exchange> exchanges = fxp.getExchangeRates(currencyList);
+        if (exchanges.isEmpty() == false) {
+            exchangeRepository.deleteAll();
+            exchangeRepository.saveAll(exchanges);
+            return exchanges;
         }
         return Collections.EMPTY_LIST;
     }

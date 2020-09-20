@@ -27,7 +27,7 @@ import mx4.springboot.persistence.PortfolioRepository;
 import mx4.springboot.persistence.PortfolioUserRepository;
 import mx4.springboot.persistence.TransactionRepository;
 import mx4.springboot.viewmodel.PortfolioViewModel;
-import org.openide.util.Exceptions;
+//import org.openide.util.Exceptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -384,7 +384,7 @@ public class PortfolioService {
                 }
                 transactions.add(t);
             } catch (ParseException ex) {
-                Exceptions.printStackTrace(ex);
+                ex.printStackTrace();
             }
         }
         transactionRepository.saveAll(transactions);
