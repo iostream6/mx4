@@ -3,9 +3,8 @@
  */
 package mx4.springboot.model;
 
-import java.time.LocalDate;
-
 /**
+ * A basic data model for a quote. Not intended for persistence (no id).
  *
  * @author Ilamah, Osho
  */
@@ -38,28 +37,36 @@ public class Quote {
         this.value = value;
     }
 
-    public static class DateQuote extends Quote {
+    public static class FXQuote extends Quote {
 
-        private LocalDate date;
+        public FXQuote() {
+        }
 
-        public DateQuote(LocalDate date, String symbol, double value) {
+        public FXQuote(long from, long to, String symbol, double value) {
             super(symbol, value);
-            this.date = date;
+            this.from = from;
+            this.to = to;
         }
 
-        public DateQuote() {
+        private long from;
+
+        private long to;
+
+        public long getFrom() {
+            return from;
         }
 
-        public LocalDate getDate() {
-            return date;
+        public void setFrom(long from) {
+            this.from = from;
         }
 
-        public void setDate(LocalDate date) {
-            this.date = date;
+        public long getTo() {
+            return to;
         }
-    }
 
-    public static enum QuoteType {
-        EOD, EOM, ITD
+        public void setTo(long to) {
+            this.to = to;
+        }
+
     }
 }

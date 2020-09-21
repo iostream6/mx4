@@ -5,8 +5,8 @@ package mx4.springboot.services.spi;
 
 import java.time.LocalDate;
 import java.util.List;
-import mx4.springboot.model.DateQuotes;
-import mx4.springboot.model.Quote.QuoteType;
+import mx4.springboot.model.DatedQuotes;
+import mx4.springboot.model.QuoteType;
 
 /**
  *
@@ -22,7 +22,7 @@ public interface StockQuoteProvider {
      * @param endDate the end date
      * @param type the quote type
      * @param failed a list which will be populated with symbols for which quotes could not be successfully retrieved
-     * @return if successful, a list of <code>DateQuotes</code>, ordered by date from oldest to newest, else an empty list
+     * @return if successful, a list of <code>DatedQuotes</code>, ordered by date from oldest to newest, with filled in stockQuotes, else an empty list
      */
-    public List<DateQuotes> getStockQuotes(List<String> symbols, LocalDate startDate, LocalDate endDate, QuoteType type, List<String> failed);
+    public List<DatedQuotes> getStockQuotes(List<String> symbols, LocalDate startDate, LocalDate endDate, QuoteType type, List<String> failed);
 }

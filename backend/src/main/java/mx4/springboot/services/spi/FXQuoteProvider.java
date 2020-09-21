@@ -6,8 +6,8 @@ package mx4.springboot.services.spi;
 import java.time.LocalDate;
 import java.util.List;
 import mx4.springboot.model.Currency;
-import mx4.springboot.model.Currency.Exchange;
-import mx4.springboot.model.Quote;
+import mx4.springboot.model.DatedQuotes;
+import mx4.springboot.model.QuoteType;
 
 /**
  *
@@ -16,13 +16,14 @@ import mx4.springboot.model.Quote;
 public interface FXQuoteProvider {
 
     /**
-     * Retrieves latest Exchange rates for the specified symbols.
-     * 
-     * @param currencies the currencies for which exchange rates are required
-     * @param startDate
-     * @param endDate
-     * @param type
-     * @return if successful, a list of exchange rates, ordered by date from oldest to newest, else an empty list 
+     * Retrieves fx quotes for the specified currency symbols between the stipulated dates.
+     *
+     * @param currencies the list of currencies for which the fx quote is required
+     * @param startDate the start date
+     * @param endDate the end date
+     * @param type the quote type
+     * @param failed a list which will be populated with symbols for which quotes could not be successfully retrieved
+     * @return if successful, a list of <code>DatedQuotes</code>, ordered by date from oldest to newest, with filled in fxQuotes, else an empty list
      */
-    List<Exchange> getExchangeRates(List<Currency> currencies, LocalDate startDate, LocalDate endDate, Quote.QuoteType type);
+    public List<DatedQuotes> getFXQuotes(List<Currency> currencies, LocalDate startDate, LocalDate endDate, QuoteType type, List<String> failed);
 }
