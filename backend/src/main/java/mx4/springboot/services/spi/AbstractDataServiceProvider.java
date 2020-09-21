@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import mx4.springboot.model.Quote;
 
 /**
  * Provides implementation of methods that are common to data (stock quote, fx rates and fin data) service implementations
@@ -56,4 +57,40 @@ public abstract class AbstractDataServiceProvider {
      * @return
      */
     public abstract String getName();
+
+    public static class DatedQuote extends Quote {
+
+        public DatedQuote(LocalDate date, String symbol, double value) {
+            super(symbol, value);
+            this.date = date;
+        }
+        private LocalDate date;
+
+        public LocalDate getDate() {
+            return date;
+        }
+
+        public void setDate(LocalDate date) {
+            this.date = date;
+        }
+
+    }
+
+    public static class DatedFXQuote extends Quote.FXQuote {
+
+        public DatedFXQuote(LocalDate date, long from, long to, String symbol, double value) {
+            super(from, to, symbol, value);
+            this.date = date;
+        }
+
+        private LocalDate date;
+
+        public LocalDate getDate() {
+            return date;
+        }
+
+        public void setDate(LocalDate date) {
+            this.date = date;
+        }
+    }
 }
