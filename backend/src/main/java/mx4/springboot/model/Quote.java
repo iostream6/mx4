@@ -10,15 +10,15 @@ package mx4.springboot.model;
  */
 public class Quote {
 
-    private String symbol;
+    private String code;// for stocks this will be the instrument ID, for fx, it will be the AAABBB string
     private double value;
 
-    public String getSymbol() {
-        return symbol;
+    public String getCode() {
+        return code;
     }
 
-    public void setSymbol(String symbol) {
-        this.symbol = symbol;
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public double getValue() {
@@ -32,8 +32,8 @@ public class Quote {
     public Quote() {
     }
 
-    public Quote(String symbol, double value) {
-        this.symbol = symbol;
+    public Quote(String code, double value) {
+        this.code = code;
         this.value = value;
     }
 
@@ -42,8 +42,8 @@ public class Quote {
         public FXQuote() {
         }
 
-        public FXQuote(long from, long to, String symbol, double value) {
-            super(symbol, value);
+        public FXQuote(long from, long to, String code, double value) {
+            super(code, value);
             this.from = from;
             this.to = to;
         }
