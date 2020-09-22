@@ -1,5 +1,6 @@
 /*
  * 2020.09.19  - Created
+ * 2020.09.22  - Improved implementation - added merge + rely on updated data model
  */
 package mx4.springboot.services.spi;
 
@@ -8,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import mx4.springboot.model.DatedQuotes;
+import mx4.springboot.model.Instrument;
 import mx4.springboot.model.Quote;
 
 /**
@@ -27,17 +30,15 @@ public abstract class AbstractDataServiceProvider {
     /**
      * Maps user-space provided quote symbols to data service-space symbols
      *
-     * @param symbols a list of user-space symbols
+     * @param instruments a list of instruments with user-space stock codes
      * @return a list of quote service-space symbols
      */
-    protected static List<String> mapSymbols(List<String> symbols) {
+    protected static List<String> mapSymbols(List<Instrument> instruments) {
         final List<String> mappedSymbols = new ArrayList<>();
-        symbols.stream().forEach(s -> {
-            final String symbol = SYMBOL_MAP.get(s);
-            mappedSymbols.add(symbol == null ? s : symbol);
+        instruments.stream().forEach(s -> {
+            final String symbol = SYMBOL_MAP.get(s.getCode());
+            mappedSymbols.add(symbol == null ? s.getCode() : symbol);
         });
-        //String[] mappedSymbolArray = new String[mappedSymbols.size()];
-        //mappedSymbols.toArray(mappedSymbolArray);
         return mappedSymbols;
     }
 
@@ -51,17 +52,31 @@ public abstract class AbstractDataServiceProvider {
         return LocalDate.of(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
     }
 
-    /**
-     * Gets the name of the data provider service.
-     *
-     * @return
-     */
-    public abstract String getName();
+    protected boolean merge(final List<DatedQuotes> x, final List<DatedQuotes> y) {
+
+        if (x.size() != y.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < x.size(); i++) {
+
+            final List<Quote> stockQuotes = x.get(i).getStockQuotes();
+            final List<Quote.FXQuote> fxQuotes = y.get(i).getFxQuotes();
+
+            if ((stockQuotes == null || fxQuotes == null) || (!x.get(i).getDate().equals(y.get(i).getDate()))) {
+                continue;// will only be an issue for the last record where FX can give in day for EOM but stockQuotes usually gives last EOD
+            }
+            x.get(i).setFxQuotes(fxQuotes);
+
+        }
+
+        return true;
+    }
 
     public static class DatedQuote extends Quote {
 
-        public DatedQuote(LocalDate date, String symbol, double value) {
-            super(symbol, value);
+        public DatedQuote(LocalDate date, String code, double value) {
+            super(code, value);
             this.date = date;
         }
         private LocalDate date;
@@ -78,8 +93,8 @@ public abstract class AbstractDataServiceProvider {
 
     public static class DatedFXQuote extends Quote.FXQuote {
 
-        public DatedFXQuote(LocalDate date, long from, long to, String symbol, double value) {
-            super(from, to, symbol, value);
+        public DatedFXQuote(LocalDate date, long from, long to, String code, double value) {
+            super(from, to, code, value);
             this.date = date;
         }
 

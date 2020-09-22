@@ -1,5 +1,6 @@
 /*
  * 2020.09.19  - Created
+ * 2020.09.22  - Improved implementation - added merge + rely on updated data model
  */
 package mx4.springboot.services.spi;
 
@@ -9,6 +10,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -17,8 +19,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import mx4.springboot.model.Currency;
 import mx4.springboot.model.DatedQuotes;
+import mx4.springboot.model.Instrument;
 import mx4.springboot.model.Quote;
-
 import mx4.springboot.model.Quote.FXQuote;
 import mx4.springboot.model.QuoteType;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,14 +32,14 @@ import org.springframework.stereotype.Component;
  * @author Ilamah, Osho
  */
 //@ServiceProviders({
-//    @ServiceProvider(service = StockQuoteProvider.class, position = 1),
+//    @ServiceProvider(service = QuoteProvider.class, position = 1),
 //    @ServiceProvider(service = FXQuoteProvider.class, position = 20)})
 @Component
 //make sure other implementations are not defaulted or autowire list and select at runtime 
 //https://stackoverflow.com/questions/19026785/injecting-multiple-implementations-to-a-single-service-in-spring,  
 //http://zetcode.com/springboot/qualifier/
 @Qualifier("default")
-public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider implements StockQuoteProvider, FXQuoteProvider {
+public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider implements QuoteProvider {
 
     private static final String MONTHLY_ADJ_STOCK_QUOTE = "TIME_SERIES_MONTHLY_ADJUSTED", MONTHLY_FX_QUOTE = "FX_MONTHLY";
     private static final String DAILY_ADJUSTED_STOCK_QUOTE = "TIME_SERIES_DAILY_ADJUSTED", DAILY_FX_QUOTE = "FX_DAILY";
@@ -72,16 +74,8 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
         // todo .. add more client to service space symbol mappings as appropriate!
     }
 
-    @Override
-    public List<DatedQuotes> getStockQuotes(List<String> symbols, LocalDate startDate, LocalDate endDate, QuoteType type, final List<String> failed) {
-        final List<String> mappedSymbols = mapSymbols(symbols);
-        switch (type) {
-            case EOD:
-                break;
-            case EOM:
-                break;
-        }
-
+    private List<DatedQuotes> getStockQuotes(List<Instrument> instruments, LocalDate startDate, LocalDate endDate, QuoteType type, final List<Instrument> failed) {
+        final List<String> mappedSymbols = mapSymbols(instruments);
         final List<DatedQuotes> dateQuotes = new ArrayList<>();
 
         final String function = type.equals(QuoteType.EOD) ? DAILY_ADJUSTED_STOCK_QUOTE : MONTHLY_ADJ_STOCK_QUOTE;
@@ -94,12 +88,14 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
 
         final List<DatedQuote> records = new ArrayList<>();
 
-        for (String symbol : mappedSymbols) {
+        for (int symbolIndex = 0; symbolIndex < instruments.size(); symbolIndex++) {
+            final String symbol = mappedSymbols.get(symbolIndex);
+            final Instrument instrument = instruments.get(symbolIndex);
             try {
 
                 //API is limited to 5 reqs per minute, in theory. So 12secs between requests is required. We use a random range between 15 to 30 secs
                 final long delay = (long) ((Math.random() * 15000) + 15000);
-                System.out.println(String.format("Processing  ::: '%s'", symbol));
+                System.out.println(String.format("Processing  ::: '%s' as %s", instrument.getCode(), symbol));
                 Thread.sleep(delay);
 
                 final String requestURL = String.format(PRICE_CSV_URL_TEMPLATE, function, symbol, API_KEY); // Another option is to use RestTemplates from Spring   
@@ -116,8 +112,8 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
                         if (firstLine.equals(API_ERROR_PREFIX)) {
                             //hasError = true;
                             //break;
-                            System.out.println(String.format("Error downloading data for symbol::: '%s'", symbol));
-                            failed.add(symbol);
+                            System.out.println(String.format("Error downloading data for symbol::: '%s'", instrument.getCode()));
+                            failed.add(instrument);
                         } else {
                             String line;
                             //Scanner sc = null;
@@ -135,7 +131,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
                                         }
                                     } else if (index == 5) {
                                         //adjusted close
-                                        final DatedQuote q = new DatedQuote(lineDate, symbol, Double.parseDouble(matcher.group()));
+                                        final DatedQuote q = new DatedQuote(lineDate, instrument.getId(), Double.parseDouble(matcher.group()));
                                         records.add(q);
                                         //System.out.println(String.format("%s :: %s :: %s", lineDate, symbol, q.getValue()));
                                         break;
@@ -160,27 +156,42 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
         if (hasError == false) {
             records.stream().collect(Collectors.groupingBy(DatedQuote::getDate)).forEach((k, v) -> {
                 final DatedQuotes dq = new DatedQuotes();
-                final List<Quote> oneDateQuotes = v.stream().map(h -> new Quote(h.getSymbol(), h.getValue())).collect(Collectors.toList());
+                final List<Quote> oneDateQuotes = v.stream().map(h -> new Quote(h.getCode(), h.getValue())).collect(Collectors.toList());
                 final LocalDate date = v.get(0).getDate();
                 dq.setDate(date);
                 dq.setStockQuotes(oneDateQuotes);
                 dateQuotes.add(dq);
             });
-            dateQuotes.sort(Comparator.comparing(DatedQuotes::getDate));
+
+            dateQuotes.sort(Comparator.comparing(DatedQuotes::getDate));//order by Date - put most earliest first
+
+            if (type.equals(QuoteType.EOM)) {
+                // we have to take account that on rare occasions, a public hliday may fall that the end of the month for one marker
+                // but not for the other. E.g. in August 2020, 31st was a Bank holiday in England but a trading day in the US so Aug 2020 will have two EOM DateQuotes: 
+                // 2020-08-28 for UK stocks and 2020-08-31 for US stocks. we need to detect and correct this anomaly - for EOM cases for now
+
+                int size = dateQuotes.size();
+                for (int i = size - 1; i > 0;) {
+                    //order is important for the next two statements
+                    final int betaIndex = i;
+                    final int alphaIndex = --i;
+
+                    final LocalDate dateA = dateQuotes.get(alphaIndex).getDate();
+                    final LocalDate dateB = dateQuotes.get(betaIndex).getDate();
+
+                    if ((dateA.getMonthValue() == dateB.getMonthValue()) && (dateA.getYear() == dateB.getYear())) //if(dateQuotes.get(i).)
+                    {
+                        dateQuotes.get(betaIndex).getStockQuotes().addAll(dateQuotes.get(alphaIndex).getStockQuotes());
+                        dateQuotes.remove(alphaIndex);
+                    }
+                }
+            }
         }
         return dateQuotes;
     }
 
-    @Override
-    public List<DatedQuotes> getFXQuotes(List<Currency> currencies, LocalDate startDate, LocalDate endDate, QuoteType type, List<String> failed) {
+    private List<DatedQuotes> getFXQuotes(List<Currency> currencies, LocalDate startDate, LocalDate endDate, QuoteType type, List<String> failed) {
         final List<DatedQuotes> dateQuotes = new ArrayList<>();
-
-        switch (type) {
-            case EOD:
-                break;
-            case EOM:
-                break;
-        }
 
         final String function = type.equals(QuoteType.EOD) ? DAILY_FX_QUOTE : MONTHLY_FX_QUOTE;
 
@@ -309,7 +320,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
         if (hasError == false) {
             records.stream().collect(Collectors.groupingBy(DatedFXQuote::getDate)).forEach((k, v) -> {
                 final DatedQuotes dq = new DatedQuotes();
-                final List<FXQuote> oneDateQuotes = v.stream().map(h -> new FXQuote(h.getFrom(), h.getTo(), h.getSymbol(), h.getValue())).collect(Collectors.toList());
+                final List<FXQuote> oneDateQuotes = v.stream().map(h -> new FXQuote(h.getFrom(), h.getTo(), h.getCode(), h.getValue())).collect(Collectors.toList());
                 final LocalDate date = v.get(0).getDate();
                 dq.setDate(date);
                 dq.setFxQuotes(oneDateQuotes);
@@ -324,6 +335,19 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
     @Override
     public String getName() {
         return SERVICE_NAME;
+    }
+
+    @Override
+    public List<DatedQuotes> getQuotes(List<Instrument> instruments, List<Currency> currencies, LocalDate startDate, LocalDate endDate, QuoteType type, List<Instrument> failedStockQuotes, final List<String> failedFXQuotes) {
+
+        final List<DatedQuotes> rsStockQuotes = getStockQuotes(instruments, startDate, endDate, QuoteType.EOM, failedStockQuotes);
+        final List<DatedQuotes> rsFXQuotes = getFXQuotes(currencies, startDate, endDate, QuoteType.EOM, failedFXQuotes);
+        //merge, anchored by FX data
+        if (merge(rsStockQuotes, rsFXQuotes)) {
+            return rsStockQuotes;
+        } else {
+            return Collections.EMPTY_LIST;
+        }
     }
 
 }
