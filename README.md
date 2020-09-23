@@ -41,3 +41,7 @@ For JWT Authentication configuration:
 * ``app.jwt.secret`` 
 * ``app.jwt.expiration.millis``
 
+For External API authentication:
+* ``app.alphavantage.apikey`` 
+* ``app.marketstack.apikey``
+

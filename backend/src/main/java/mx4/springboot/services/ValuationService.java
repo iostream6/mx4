@@ -1,5 +1,6 @@
 /*
  * 2020.09.19  - Created
+ * 2020.09.23  - Introduced minor tweaks and confirming compatibility with frontend
  */
 package mx4.springboot.services;
 
@@ -130,24 +131,17 @@ public class ValuationService {
     }
 
     /**
-     * Reads all DatedQuotes records from the database
-     *
-     * @return all DatedQuotes records in the database
-     */
-    @GetMapping("/api/values")
-    public List<DatedQuotes> readDatedQuotes() {
-        return quotesRepository.findAll(Sort.by(Sort.Direction.ASC, "date"));
-    }
-
-    /**
      * Reads the latest DatedQuotes records from the database
      *
      * @return the latest DatedQuotes records in the database
      */
-    @GetMapping("/api/values/last")
-    public ResponseEntity<?> readLastValuesRecords() {
-        List<DatedQuotes> dq = quotesRepository.findAll(PageRequest.of(0, 1, Sort.Direction.DESC, "date")).toList();//EORROR - LIMIT
-        return ResponseEntity.ok(dq);
+    @GetMapping("/api/quotes/last")
+    public ResponseEntity<?> readLastFXQuotes() {
+        List<DatedQuotes> dq = quotesRepository.findAll(PageRequest.of(0, 1, Sort.Direction.DESC, "date")).toList();
+        if (dq.isEmpty()) {
+            return ResponseEntity.notFound().build(); //sends http 404 
+        }
+        return ResponseEntity.ok(dq.get(0));
     }
 
     /**

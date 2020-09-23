@@ -10,6 +10,7 @@
  * 2020.06.12  - Fixed delete transaction frontend state update - only entries with the right indices are now removed by starting from back to front
  * 2020.06.13  - Added centralized state info for displayFormat and fx rates client download and usage.
  * 2020.06.29  - Added centralized Values data download
+ * 2020.09.23  - Updated values and fxr download to use common revised server API
  */
 
 import Vue from 'vue'
@@ -353,14 +354,17 @@ export default new Vuex.Store({
         );
         if (axiosResponse.status == 200) {
           results["instruments"] = axiosResponse.data;
+          //console.log("INSTRUMENTS");
+          //console.log(axiosResponse.data);
         }
 
-        //exchange rates
+        //quotes
         axiosResponse = await context.getters.getAuthenticatedAxios.get(
-          `${context.state.server}/api/exchanges`
+          `${context.state.server}/api/quotes/last`
         );
         if (axiosResponse.status == 200) {
-          results["fxr"] = axiosResponse.data;
+          results["fxr"] = axiosResponse.data["fxQuotes"];
+          results["values"] = axiosResponse.data["stockQuotes"];
         }
 
         //transactions
@@ -384,14 +388,6 @@ export default new Vuex.Store({
           }
         }
 
-        //instrument values
-        axiosResponse = await context.getters.getAuthenticatedAxios.get(
-          `${context.state.server}/api/values/last`
-        );
-        if (axiosResponse.status == 200) {
-          results["values"] = axiosResponse.data;
-        }
-
         if (results["brokers"] && results["portfolios"] && results["currencies"] && results["sectors"] && results["entities"]
           && results["instruments"] && results["fxr"] && results["transactions"] && results["values"]) {
           context.commit("setBasicData", results);
@@ -405,46 +401,6 @@ export default new Vuex.Store({
         }
       }
     },
-    // /**
-    // * Sends Axios request to backend API to get a list of brokers and portfolios relevant to the current 
-    // * user as well as supported currencies
-    // * @param {*} context the required vuex context
-    // */
-    // async getBasicAdminDataAction(context) {
-    //   try {
-    //     // let results = {};
-    //     // //entities
-    //     // let axiosResponse = await context.getters.getAuthenticatedAxios.get(
-    //     //   `${context.state.server}/api/entities`
-    //     // );
-    //     // if (axiosResponse.status == 200) {
-    //     //   results["entities"] = axiosResponse.data;
-    //     // }
-    //     // //sectors
-    //     // axiosResponse = await context.getters.getAuthenticatedAxios.get(
-    //     //   `${context.state.server}/api/sectors`
-    //     // );
-    //     // if (axiosResponse.status == 200) {
-    //     //   results["sectors"] = axiosResponse.data;
-    //     // }
-    //     // // instruments
-    //     // axiosResponse = await context.getters.getAuthenticatedAxios.get(
-    //     //   `${context.state.server}/admin/instruments`
-    //     // );
-    //     // if (axiosResponse.status == 200) {
-    //     //   results["instruments"] = axiosResponse.data;
-    //     // }
-    //     // if (results["sectors"] && results["entities"] && results["instruments"]) {
-    //     //   context.commit("setBasicAdminData", results);
-    //     // }
-
-    //   } catch (error) {
-    //     //    TODO - handle error
-    //     if (error.response) {
-    //       // console.log(error.response.data);
-    //     }
-    //   }
-    // },
     /**
      * 
      * @param {*} context 

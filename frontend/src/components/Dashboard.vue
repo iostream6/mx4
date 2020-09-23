@@ -6,6 +6,7 @@
 ***  2020.07.04 Fixed tooltips format for barcharts and doughnut charts. Introduced custom Chart.js colours. Added quaterly dividend growth chart
 ***             Instrument Holdings valuation chart tooltip now includes the number of units as well
 ***  2020.07.05 Implemented dashboard settings to control the plot parameters (range, time frequency, currency, etc.)
+***  2020.09.23 Updated to use common revised values and fxr server API data model
 -->
 
 <template>
@@ -179,12 +180,12 @@ export default {
     fx() {
       const baseCurrencyId = this.displayFormats[this.settings.currency].baseCurrencyId;
       const fx = {
-        usd: this.fxr.find(item => item.fromId == 1001101 && item.toId == baseCurrencyId).converter,
-        gbp: this.fxr.find(item => item.fromId == 1001103 && item.toId == baseCurrencyId).converter,
-        eur: this.fxr.find(item => item.fromId == 1001105 && item.toId == baseCurrencyId).converter,
-        usx: this.fxr.find(item => item.fromId == 1001102 && item.toId == baseCurrencyId).converter,
-        gbx: this.fxr.find(item => item.fromId == 1001104 && item.toId == baseCurrencyId).converter,
-        eux: this.fxr.find(item => item.fromId == 1001106 && item.toId == baseCurrencyId).converter
+        usd: this.fxr.find(item => item.from == 1001101 && item.to == baseCurrencyId).value,
+        gbp: this.fxr.find(item => item.from == 1001103 && item.to == baseCurrencyId).value,
+        eur: this.fxr.find(item => item.from == 1001105 && item.to == baseCurrencyId).value,
+        usx: this.fxr.find(item => item.from == 1001102 && item.to == baseCurrencyId).value,
+        gbx: this.fxr.find(item => item.from == 1001104 && item.to == baseCurrencyId).value,
+        eux: this.fxr.find(item => item.from == 1001106 && item.to == baseCurrencyId).value
       };
       return fx;
     },
@@ -336,9 +337,9 @@ export default {
       const vCurrencies = []; //{ labels: [], holdings: [] };
 
       for (const instrument of this.supportedInstruments) {
-        const valueIndex = this.values.records.findIndex(value => value.instrumentId == instrument.id);
+        const valueIndex = this.values.findIndex(value => value.code == instrument.id);
         if (valueIndex > -1) {
-          vInstruments.push({ label: instrument.code, valuation: 0, units: 0, unitValue: this.values.records[valueIndex].value });
+          vInstruments.push({ label: instrument.code, valuation: 0, units: 0, unitValue: this.values[valueIndex].value });
         }
       }
 
