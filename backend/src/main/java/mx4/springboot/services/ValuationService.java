@@ -1,6 +1,6 @@
 /*
  * 2020.09.19  - Created
- * 2020.09.23  - Introduced minor tweaks and confirming compatibility with frontend
+ * 2020.09.23  - Introduced minor tweaks and confirmed interop with frontend. Added Logging support.
  */
 package mx4.springboot.services;
 
@@ -31,6 +31,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import mx4.springboot.services.spi.QuoteProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,6 +45,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RestController
 public class ValuationService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ValuationService.class);
+    
     // Autowire the default data source implementation :: 
     //https://stackoverflow.com/questions/19026785/injecting-multiple-implementations-to-a-single-service-in-spring,  
     //http://zetcode.com/springboot/qualifier/
@@ -85,7 +89,7 @@ public class ValuationService {
                 //existing records in the Quotes DB - check if we need to download new data!
                 LocalDate lastDBQuoteDate = lastDateQuotesPage.getContent().get(0).getDate();
                 if (lastDBQuoteDate.isAfter(startDate)) {
-                    System.out.println(String.format("EOM Data | Start@%s      End@%s| CutOff@%s | Last DB@%s -> Nothing to do", startDate, now, cutOffDate, lastDBQuoteDate));
+                    logger.info("EOM Data | Start@{}      End@{}| CutOff@{} | Last DB@{} -> Nothing to do", startDate, now, cutOffDate, lastDBQuoteDate);
                     return;
                 }
             }
@@ -97,31 +101,34 @@ public class ValuationService {
             final List<DatedQuotes> rsQuotes = qp.getQuotes(instruments, currencyList, startDate, now, QuoteType.EOM, failedStockQuotes, failedFXQuotes);
 
             if (rsQuotes.isEmpty() == false) {
+                final DecimalFormat nf = new DecimalFormat();
+                nf.setMinimumFractionDigits(4);
+                nf.setMaximumFractionDigits(4);
                 final List<DatedQuotes> quotes = rsQuotes.stream().filter(dqs -> {
                     return dqs.getFxQuotes() != null && dqs.getStockQuotes() != null && dqs.getDate().isBefore(cutOffDate);
                 }).collect(Collectors.toList());
-                System.out.println(String.format("\n\n\n --- Historic quotes from %s ---", qp.getName()));
+                logger.info("\n\n\n --- Historic quotes from {} ---", qp.getName());
                 quotes.stream().forEach(dqs -> {
-                    System.out.println(String.format("%s --------------------------", dqs.getDate()));
-                    dqs.getStockQuotes().stream().forEach(q -> System.out.println(String.format("STOCK\t%s\t%.4f", getSymbolFromId(instruments, q.getCode()), q.getValue())));
-                    System.out.println("\t\t\t");
-                    dqs.getFxQuotes().stream().forEach(q -> System.out.println(String.format("FX\t%s\t%.6f", q.getCode(), q.getValue())));
-                    System.out.println("*************************************");
+                    logger.info("{} --------------------------", dqs.getDate());
+                    dqs.getStockQuotes().stream().forEach(q -> logger.info("STOCK\t{}\t{}", getSymbolFromId(instruments, q.getCode()), nf.format(q.getValue())));
+                    logger.info("\t\t\t");
+                    dqs.getFxQuotes().stream().forEach(q -> logger.info("FX\t{}\t{}", q.getCode(), nf.format(q.getValue())));
+                    logger.info("*************************************");
                 });
                 quotesRepository.deleteAll();
                 quotesRepository.saveAll(quotes);
             }
 
             if (failedStockQuotes.isEmpty() == false) {
-                System.out.println("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+                logger.info("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
                 failedStockQuotes.stream().forEach(f -> {
-                    System.out.println(String.format(" --- %s historic quotes not found by %s", f.getCode(), qp.getName()));//print the friendly name
+                    logger.warn(" --- {} historic quotes not found by {}", f.getCode(), qp.getName());//print the friendly name
                 });
             }
             if (failedFXQuotes.isEmpty() == false) {
-                System.out.println("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+                logger.info("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
                 failedFXQuotes.stream().forEach(f -> {
-                    System.out.println(String.format(" --- %s historic FX quotes not found by %s", f, qp.getName()));
+                    logger.warn(" --- {} historic FX quotes not found by {}", f, qp.getName());
                 });
             }
         };
@@ -163,7 +170,7 @@ public class ValuationService {
         final DecimalFormat nf = new DecimalFormat("#0.00000##");
         final String STOCK_TYPE = "STOCK";
         final Scanner lineScanner = new Scanner(data);
-
+       
         final List<Instrument> instruments = instrumentRepository.findAll();
 
         Map<LocalDate, DatedQuotes> inputDateQuotesMap = new HashMap<>();
@@ -186,12 +193,12 @@ public class ValuationService {
                     if (i.getCode().equals(lineData[CODE_INDEX])) {
                         r.getStockQuotes().add(new Quote(i.getId(), nf.parse(lineData[VALUE_INDEX]).doubleValue()));
                         found = true;
-                        System.out.println("OK " + lineData[CODE_INDEX]);
+                        logger.info("OK {}", lineData[CODE_INDEX]);
                         break;
                     }
                 }
                 if (!found) {
-                    System.out.println("Could not find " + lineData[CODE_INDEX]);
+                    logger.warn("Could not find {}", lineData[CODE_INDEX]);
                 }
             } else {
                 //NOT currently supported as the auto create process works well for these
@@ -201,11 +208,11 @@ public class ValuationService {
         final List<DatedQuotes> edqsList = quotesRepository.findAll(Sort.by(Sort.Direction.ASC, "date"));
 
         if (edqsList.isEmpty() == false) {
-            System.out.println("\n\n\n --- Existing quotes ***");
+            logger.info("\n\n\n --- Existing quotes ***");
             edqsList.stream().forEach(dqs -> {
-                System.out.println(String.format("%s --------------------------", dqs.getDate()));
-                dqs.getStockQuotes().stream().forEach(q -> System.out.println(String.format("STOCK\t%s\t%.4f", getSymbolFromId(instruments, q.getCode()), q.getValue())));
-                System.out.println("*************************************");
+                logger.info("{} --------------------------", dqs.getDate());
+                dqs.getStockQuotes().stream().forEach(q ->  logger.info("STOCK\t{}\t{}", getSymbolFromId(instruments, q.getCode()),nf.format(q.getValue())));
+                logger.info("*************************************");
             });
         }
 
@@ -219,11 +226,11 @@ public class ValuationService {
         });
 
         if (edqsList.isEmpty() == false) {
-            System.out.println("\n\n\n --- Updated quotes ***");
+            logger.info("\n\n\n --- Updated quotes ***");
             edqsList.stream().forEach(dqs -> {
-                System.out.println(String.format("%s --------------------------", dqs.getDate()));
-                dqs.getStockQuotes().stream().forEach(q -> System.out.println(String.format("STOCK\t%s\t%.4f", getSymbolFromId(instruments, q.getCode()), q.getValue())));
-                System.out.println("*************************************");
+                logger.info("{} --------------------------", dqs.getDate());
+                dqs.getStockQuotes().stream().forEach(q -> logger.info("STOCK\t{}\t{}", getSymbolFromId(instruments, q.getCode()), nf.format(q.getValue())));
+                logger.info("*************************************");
             });
         }
 

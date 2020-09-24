@@ -1,6 +1,7 @@
 /*
  * 2020.09.19  - Created
  * 2020.09.22  - Improved implementation - added merge + rely on updated data model
+ * 2020.09.24  - Added Logging support.
  */
 package mx4.springboot.services.spi;
 
@@ -23,6 +24,8 @@ import mx4.springboot.model.Instrument;
 import mx4.springboot.model.Quote;
 import mx4.springboot.model.Quote.FXQuote;
 import mx4.springboot.model.QuoteType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -46,6 +49,8 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
     private static final String PRICE_CSV_URL_TEMPLATE = "https://www.alphavantage.co/query?function=%s&symbol=%s&apikey=%s&datatype=csv";
     private static final String FX_CSV_URL_TEMPLATE = "https://www.alphavantage.co/query?function=%s&from_symbol=%s&to_symbol=%s&apikey=%s&datatype=csv";
     private static final String API_ERROR_PREFIX = "{", SERVICE_NAME = "AlphaVantage Quote Service";
+    
+    private static final Logger logger = LoggerFactory.getLogger(AlphaVantageDataServiceProvider.class);
 
     //
     @Value("${app.alphavantage.apikey}")
@@ -95,7 +100,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
 
                 //API is limited to 5 reqs per minute, in theory. So 12secs between requests is required. We use a random range between 15 to 30 secs
                 final long delay = (long) ((Math.random() * 15000) + 15000);
-                System.out.println(String.format("Processing  ::: '%s' as %s", instrument.getCode(), symbol));
+                logger.info("Processing  ::: '{}' as {}", instrument.getCode(), symbol);
                 Thread.sleep(delay);
 
                 final String requestURL = String.format(PRICE_CSV_URL_TEMPLATE, function, symbol, API_KEY); // Another option is to use RestTemplates from Spring   
@@ -112,7 +117,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
                         if (firstLine.equals(API_ERROR_PREFIX)) {
                             //hasError = true;
                             //break;
-                            System.out.println(String.format("Error downloading data for symbol::: '%s'", instrument.getCode()));
+                            logger.warn("Error downloading data for symbol::: '{}'", instrument.getCode());
                             failed.add(instrument);
                         } else {
                             String line;
@@ -133,7 +138,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
                                         //adjusted close
                                         final DatedQuote q = new DatedQuote(lineDate, instrument.getId(), Double.parseDouble(matcher.group()));
                                         records.add(q);
-                                        //System.out.println(String.format("%s :: %s :: %s", lineDate, symbol, q.getValue()));
+                                        //System.out.println(String.format("{} :: {} :: {}", lineDate, symbol, q.getValue()));
                                         break;
                                     }
                                     index++;
@@ -216,7 +221,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
                         try {
                             //API is limited to 5 reqs per minute, in theory. So 12secs between requests is required. We use a random range between 15 to 30 secs
                             final long delay = (long) ((Math.random() * 15000) + 15000);
-                            System.out.println(String.format("Processing  ::: '%s'", fxSymbol));
+                            logger.info("Processing  ::: '{}'", fxSymbol);
                             Thread.sleep(delay);
 
                             final String requestURL = String.format(FX_CSV_URL_TEMPLATE, function, fromCurrency.getCode(), toCurrency.getCode(), API_KEY); // Another option is to use RestTemplates from Spring   
@@ -232,7 +237,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
                                     if (firstLine.equals(API_ERROR_PREFIX)) {
                                         //hasError = true;
                                         //break;
-                                        System.out.println(String.format("Error downloading data for symbol::: '%s'", fxSymbol));
+                                        logger.warn("Error downloading data for symbol::: '{}'", fxSymbol);
                                         failed.add(fxSymbol);
                                     } else {
                                         String line;
@@ -275,7 +280,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
 
                                                         if (readLines == 0) {//do onliy when the first dataline in the csv is encountered
                                                             resolvedPairs.add(fxSymbol2);//mark tthe associated main pair as resolved so that it is not recomputed
-                                                            System.out.println(String.format("\tCalculating  ::: '%s'", fxSymbol2));
+                                                            logger.info("\tCalculating  ::: '{}'", fxSymbol2);
                                                         }
 
                                                         final double bbbaaa = 1.0 / aaabbb;
@@ -314,8 +319,8 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
             }
         }
 
-        System.out.println("Resolved FX pairs:::");
-        resolvedPairs.stream().forEach(s -> System.out.print(String.format("%s |", s)));
+        logger.info("Resolved FX pairs:::");
+        resolvedPairs.stream().forEach(s -> logger.info("{} |", s));
 
         if (hasError == false) {
             records.stream().collect(Collectors.groupingBy(DatedFXQuote::getDate)).forEach((k, v) -> {
