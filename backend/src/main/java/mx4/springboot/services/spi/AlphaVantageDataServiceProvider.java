@@ -171,7 +171,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
             dateQuotes.sort(Comparator.comparing(DatedQuotes::getDate));//order by Date - put most earliest first
 
             if (type.equals(QuoteType.EOM)) {
-                // we have to take account that on rare occasions, a public hliday may fall that the end of the month for one marker
+                // we have to take account that on rare occasions, a public holiday may fall that the end of the month for one marker
                 // but not for the other. E.g. in August 2020, 31st was a Bank holiday in England but a trading day in the US so Aug 2020 will have two EOM DateQuotes: 
                 // 2020-08-28 for UK stocks and 2020-08-31 for US stocks. we need to detect and correct this anomaly - for EOM cases for now
 

@@ -85,9 +85,12 @@ public class ValuationService {
             LocalDate cutOffDate = now.withDayOfMonth(1);   //cutoff date is the first day of this month on 'isBefore' criteria:: only records before this date are accepted
             Page<DatedQuotes> lastDateQuotesPage = quotesRepository.findAll(PageRequest.of(0, 1, Sort.Direction.DESC, "date"));
 
+            logger.info("EOM Data | Start@{}      End@{}| CutOff@{} | Last DB@{} -> Checking . . .", startDate, now, cutOffDate);
+            
             if (lastDateQuotesPage.getNumberOfElements() > 0) {
                 //existing records in the Quotes DB - check if we need to download new data!
                 LocalDate lastDBQuoteDate = lastDateQuotesPage.getContent().get(0).getDate();
+                logger.info("EOM Data | Last DB Quote Date: @{}", lastDBQuoteDate);
                 if (lastDBQuoteDate.isAfter(startDate)) {
                     logger.info("EOM Data | Start@{}      End@{}| CutOff@{} | Last DB@{} -> Nothing to do", startDate, now, cutOffDate, lastDBQuoteDate);
                     return;
@@ -117,6 +120,8 @@ public class ValuationService {
                 });
                 quotesRepository.deleteAll();
                 quotesRepository.saveAll(quotes);
+            }else{
+                logger.info("EOM Data | Empty return values ");
             }
 
             if (failedStockQuotes.isEmpty() == false) {
