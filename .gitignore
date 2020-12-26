@@ -76,6 +76,7 @@ yarn-error.log*
 .pub-cache/
 .pub/
 /build/
+flutter/build/
 
 # Web related
 lib/generated_plugin_registrant.dart
