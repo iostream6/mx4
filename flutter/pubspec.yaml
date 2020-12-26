@@ -29,6 +29,12 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.0
 
+  # State management via provider package
+  provider: ^4.3.2+3
+
+  #http support 
+  http: ^0.12.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
