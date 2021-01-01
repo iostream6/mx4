@@ -5,9 +5,12 @@
 
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import 'package:provider/provider.dart';
 
 class DashboardView extends StatelessWidget {
   final User user;
+
+  final TextStyle _style = TextStyle(fontFamily: 'Montserrat', fontSize: 20.0);
 
   DashboardView({Key key, this.user}) : super(key: key);
 
@@ -30,6 +33,22 @@ class DashboardView extends StatelessWidget {
               'Hey',
               style: Theme.of(context).textTheme.headline4,
             ),
+            //STUB logout function
+            Material(
+              elevation: 5.0,
+              color: Colors.blueAccent[400],
+              child: MaterialButton(
+                minWidth: MediaQuery.of(context).size.width,
+                padding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+                onPressed: () {
+                  Provider.of<AuthenticationDetailsManager>(context, listen: false).authenticate(); //effectively log out
+                  //this above is like context.read<UserChangeNotifier>().authenticate(...); but can be used inside build method
+                  // If succeed or fail, the changes will automatically be notified and the correct view will appear - hence the below is commented out
+                  //Navigator.pop(context);
+                },
+                child: Text("Log out", textAlign: TextAlign.center, style: _style.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            )
           ],
         ),
       ),
