@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'models/models.dart';
-import 'views/views.dart';
+
+import 'views/login_view.dart';
+import 'views/landing_view.dart';
+import 'views/secured/secured_views.dart';
 
 // Inspired by 
 // Learpainless:
@@ -29,7 +32,7 @@ void main() {
 }
 
 class FlutterApp extends StatelessWidget {
-  static const String _title = 'Provider Sign-In Example';
+  static const String _title = 'Maloo Equity Manager';
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +53,10 @@ class FlutterApp extends StatelessWidget {
       case UserState.unauthenticated:
         return LoginView();
       case UserState.authenticated:
-        return DashboardView(
+        return SecuredView(
           //call extension read method
           //https://pub.dev/packages/provider
-          user: Provider.of<AuthenticationDetailsManager>(context, listen: false).user, // context.read<UserChangeNotifier>().user,
+          //user: Provider.of<AuthenticationDetailsManager>(context, listen: false).user, // context.read<UserChangeNotifier>().user,
         );
       default:
         return LandingView();
