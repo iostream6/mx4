@@ -1,6 +1,7 @@
 /*
  * 2020.09.19  - Created
  * 2020.09.22  - Improved implementation - added merge + rely on updated data model
+ * 2021.01.01  - Improved merge implementation to deal with general cases
  */
 package mx4.springboot.services.spi;
 
@@ -51,25 +52,24 @@ public abstract class AbstractDataServiceProvider {
     protected static LocalDate getDate(final Calendar c) {
         return LocalDate.of(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
     }
-
-    protected boolean merge(final List<DatedQuotes> x, final List<DatedQuotes> y) {
-
-        if (x.size() != y.size()) {
-            return false;
-        }
-
-        for (int i = 0; i < x.size(); i++) {
-
-            final List<Quote> stockQuotes = x.get(i).getStockQuotes();
-            final List<Quote.FXQuote> fxQuotes = y.get(i).getFxQuotes();
-
-            if ((stockQuotes == null || fxQuotes == null) || (!x.get(i).getDate().equals(y.get(i).getDate()))) {
-                continue;// will only be an issue for the last record where FX can give in day for EOM but stockQuotes usually gives last EOD
+    
+    protected boolean merge(final List<DatedQuotes> equityQuotes, final List<DatedQuotes> fxQuotes){
+        for(final DatedQuotes deq : equityQuotes){
+            LocalDate date = deq.getDate();
+            boolean merged = false;
+            for (int i = 0; i < fxQuotes.size(); i++) {
+                if(fxQuotes.get(i).getDate().equals(date)){
+                    final List<Quote.FXQuote> fxQuote = fxQuotes.get(i).getFxQuotes();
+                    deq.setFxQuotes(fxQuote);                   
+                    merged = true;
+                    break;
+                }
             }
-            x.get(i).setFxQuotes(fxQuotes);
-
+            if(!merged){
+                return false;//could not find FX dates for this stock quotes! Fail gracefully
+            }
         }
-
+        
         return true;
     }
 
