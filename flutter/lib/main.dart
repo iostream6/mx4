@@ -3,69 +3,60 @@
  * 
  */
 
-
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'models/models.dart';
+import 'views/views.dart';
+
+// Inspired by 
+// Learpainless:
+//   https://learnpainless.com/flutter/firebase-auth-email-login-using-provider-4-flutter/ 
+//   https://github.com/learnpainless/FirebaseAuthProviderFlutter
+//
+// Managing Flutter State using Provider
+//   https://medium.com/flutter-community/managing-flutter-state-using-provider-e26c78060c26
+//
+// How to authenticate and login users in Flutter from a REST Api
+//   https://mundanecode.com/posts/flutter-restapi-login/
+//
 void main() {
-  runApp(MyApp());
+  //The Providers are above MyApp instead of inside it so that tests can use MyApp will mocking the providers
+  //Note that the ChangeNotifierProvider itself is a widget
+  runApp(ChangeNotifierProvider(
+      create: (_) => AuthenticationDetailsManager(),
+      child: FlutterApp())); //can also use MultiProvider here!
 }
 
-class MyApp extends StatelessWidget {
+class FlutterApp extends StatelessWidget {
+  static const String _title = 'Provider Sign-In Example';
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-  final String title;
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+        title: _title,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      )
-    );
+        home: _showView(context),
+        debugShowCheckedModeBanner: false);
+  }
+
+  Widget _showView(BuildContext context) {
+    
+    switch (context.watch<AuthenticationDetailsManager>().userState) {
+      case UserState.authenticating:
+      case UserState.unauthenticated:
+        return LoginView();
+      case UserState.authenticated:
+        return DashboardView(
+          //call extension read method
+          //https://pub.dev/packages/provider
+          user: Provider.of<AuthenticationDetailsManager>(context, listen: false).user, // context.read<UserChangeNotifier>().user,
+        );
+      default:
+        return LandingView();
+    }
   }
 }
