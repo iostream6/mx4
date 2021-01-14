@@ -7,6 +7,7 @@
 ***             Instrument Holdings valuation chart tooltip now includes the number of units as well
 ***  2020.07.05 Implemented dashboard settings to control the plot parameters (range, time frequency, currency, etc.)
 ***  2020.09.23 Updated to use common revised values and fxr server API data model
+***  2021.01.14 Update - Provisional data is excluded based on the provisional property of the transaction, no longer based on date being later than current
 -->
 
 <template>
@@ -230,7 +231,7 @@ export default {
       let divSums = { ytd: 0, ttm: 0, l5y: 0, all: 0 };
 
       for (const t of this.transactions) {
-        if (!this.settings.projectedDividends && t.date > currentDate) {
+        if (this.settings.projectedDividends == false && t.provisional == true /*t.date > currentDate*/) {
           continue;
         }
         if (t.type == "DIV" && (index = instrumentDivValues.findIndex(value => value.code == t.instrumentCode)) > -1) {
