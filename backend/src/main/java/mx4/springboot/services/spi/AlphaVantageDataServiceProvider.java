@@ -24,8 +24,6 @@ import mx4.springboot.model.Instrument;
 import mx4.springboot.model.Quote;
 import mx4.springboot.model.Quote.FXQuote;
 import mx4.springboot.model.QuoteType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -50,8 +48,6 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
     private static final String FX_CSV_URL_TEMPLATE = "https://www.alphavantage.co/query?function=%s&from_symbol=%s&to_symbol=%s&apikey=%s&datatype=csv";
     private static final String API_ERROR_PREFIX = "{", SERVICE_NAME = "AlphaVantage Quote Service";
     
-    private static final Logger logger = LoggerFactory.getLogger(AlphaVantageDataServiceProvider.class);
-
     //
     @Value("${app.alphavantage.apikey}")
     private String API_KEY;
@@ -348,7 +344,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
         final List<DatedQuotes> rsStockQuotes = getStockQuotes(instruments, startDate, endDate, QuoteType.EOM, failedStockQuotes);
         final List<DatedQuotes> rsFXQuotes = getFXQuotes(currencies, startDate, endDate, QuoteType.EOM, failedFXQuotes);
         //merge, anchored by FX data
-        if (merge(rsStockQuotes, rsFXQuotes)) {
+        if (merge(rsStockQuotes, rsFXQuotes, false /* works better  */)) {
             return rsStockQuotes;
         } else {
             return Collections.EMPTY_LIST;
