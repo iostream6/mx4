@@ -1,6 +1,7 @@
 /*
  * 2020.03.31  - Created
  * 2020.09.13  - Moved sectorId attribute to Entity
+ * 2021.01.21  - Added active property to model
  */
 package mx4.springboot.model;
 
@@ -39,6 +40,16 @@ public class Instrument {
     
     private String countryId;
     
+    private boolean active;
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+       
     public Type getType() {
         return type;
     }
