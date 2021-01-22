@@ -1,6 +1,7 @@
 /*
  * 2020.09.19  - Created
  * 2020.09.23  - Introduced minor tweaks and confirmed interop with frontend. Added Logging support.
+ * 2021.01.22  - Inactive instruments now excluded from stock quote retrieval
  */
 package mx4.springboot.services;
 
@@ -46,7 +47,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class ValuationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ValuationService.class);
-    
+
     // Autowire the default data source implementation :: 
     //https://stackoverflow.com/questions/19026785/injecting-multiple-implementations-to-a-single-service-in-spring,  
     //http://zetcode.com/springboot/qualifier/
@@ -79,6 +80,19 @@ public class ValuationService {
     @PostMapping("/admin/quotes")
     public ResponseEntity<?> createQuotes() {
         final Runnable r = () -> {
+            
+            final List<Instrument> allInstruments = instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
+            final List<Instrument> activeInstruments = allInstruments.stream().filter((i) -> i.isActive()).collect(Collectors.toList());
+
+            logger.info("---");
+            logger.info("---");
+            logger.info("--- Instruments STATUS ::");
+            allInstruments.forEach((i) -> {
+                final String status = i.isActive() ? "++" : "--";
+                logger.info("\t {} {} {}", status, i.getCode(), i.getDescription());
+            });
+            logger.info("INSTRUMENTS :: Active: {}, Inactive: {}", activeInstruments.size(), allInstruments.size() - activeInstruments.size());
+            
             final LocalDate now = LocalDate.now();
             final LocalDate startDate = now.minusMonths(1);
 
@@ -86,7 +100,7 @@ public class ValuationService {
             Page<DatedQuotes> lastDateQuotesPage = quotesRepository.findAll(PageRequest.of(0, 1, Sort.Direction.DESC, "date"));
 
             logger.info("EOM Data | Start@{}      End@{}| CutOff@{} | Last DB@{} -> Checking . . .", startDate, now, cutOffDate);
-            
+
             if (lastDateQuotesPage.getNumberOfElements() > 0) {
                 //existing records in the Quotes DB - check if we need to download new data!
                 LocalDate lastDBQuoteDate = lastDateQuotesPage.getContent().get(0).getDate();
@@ -96,12 +110,11 @@ public class ValuationService {
                     return;
                 }
             }
-
-            final List<Instrument> instruments = instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
+            
             final List<Instrument> failedStockQuotes = new ArrayList<>();
             final List<String> failedFXQuotes = new ArrayList<>();
 
-            final List<DatedQuotes> rsQuotes = qp.getQuotes(instruments, currencyList, startDate, now, QuoteType.EOM, failedStockQuotes, failedFXQuotes);
+            final List<DatedQuotes> rsQuotes = qp.getQuotes(activeInstruments, currencyList, startDate, now, QuoteType.EOM, failedStockQuotes, failedFXQuotes);
 
             if (rsQuotes.isEmpty() == false) {
                 final DecimalFormat nf = new DecimalFormat();
@@ -113,14 +126,14 @@ public class ValuationService {
                 logger.info("\n\n\n --- Historic quotes from {} ---", qp.getName());
                 quotes.stream().forEach(dqs -> {
                     logger.info("{} --------------------------", dqs.getDate());
-                    dqs.getStockQuotes().stream().forEach(q -> logger.info("STOCK\t{}\t{}", getSymbolFromId(instruments, q.getCode()), nf.format(q.getValue())));
+                    dqs.getStockQuotes().stream().forEach(q -> logger.info("STOCK\t{}\t{}", getSymbolFromId(activeInstruments, q.getCode()), nf.format(q.getValue())));
                     logger.info("\t\t\t");
                     dqs.getFxQuotes().stream().forEach(q -> logger.info("FX\t{}\t{}", q.getCode(), nf.format(q.getValue())));
                     logger.info("*************************************");
                 });
                 quotesRepository.deleteAll();
                 quotesRepository.saveAll(quotes);
-            }else{
+            } else {
                 logger.info("EOM Data | Empty return values ");
             }
 
@@ -175,7 +188,7 @@ public class ValuationService {
         final DecimalFormat nf = new DecimalFormat("#0.00000##");
         final String STOCK_TYPE = "STOCK";
         final Scanner lineScanner = new Scanner(data);
-       
+
         final List<Instrument> instruments = instrumentRepository.findAll();
 
         Map<LocalDate, DatedQuotes> inputDateQuotesMap = new HashMap<>();
@@ -216,7 +229,7 @@ public class ValuationService {
             logger.info("\n\n\n --- Existing quotes ***");
             edqsList.stream().forEach(dqs -> {
                 logger.info("{} --------------------------", dqs.getDate());
-                dqs.getStockQuotes().stream().forEach(q ->  logger.info("STOCK\t{}\t{}", getSymbolFromId(instruments, q.getCode()),nf.format(q.getValue())));
+                dqs.getStockQuotes().stream().forEach(q -> logger.info("STOCK\t{}\t{}", getSymbolFromId(instruments, q.getCode()), nf.format(q.getValue())));
                 logger.info("*************************************");
             });
         }
@@ -320,6 +333,12 @@ public class ValuationService {
 
         target.addAll(filteredFrom.collect(Collectors.toList()));
 
+    }
+
+    private List<Instrument> getActiveInstruments() {
+        final List<Instrument> instruments = instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
+        final List<Instrument> transactions = instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
+        return null;
     }
 
 }
