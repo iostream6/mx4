@@ -1,6 +1,7 @@
 /*
  * 2020.04.02 - Created | Base functionality QC'ed
  * 2020.05.24 - Implemented Admin CRUD endpoints for Instruments. Add minor improvements to Entity endpoint implementation
+ * 2021.01.22 - Update instrument endpoint now also updates 'active' property
  *
  * // TODO when an entity is deleted, all associated instruments ought to be deleted as well. When an instrument is deleted, it ought to be deleted from all portfolio transactions
  * // Simple solution for now may be to preclude delete of Entity that has one or more instruments. Ditto for instruments that have one or more transactions
@@ -116,6 +117,7 @@ public class EntityService {
             ii.setEntityId(i.getEntityId());
             ii.setDescription(i.getDescription());
             ii.setCountryId(i.getCountryId());
+            ii.setActive(i.isActive());
             return ResponseEntity.ok(instrumentRepository.save(ii));
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
