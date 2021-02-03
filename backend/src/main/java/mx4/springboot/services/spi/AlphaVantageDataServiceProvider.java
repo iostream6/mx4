@@ -2,6 +2,7 @@
  * 2020.09.19  - Created
  * 2020.09.22  - Improved implementation - added merge + rely on updated data model
  * 2020.09.24  - Added Logging support.
+ * 2021.02.03  - FX quotes retrieval does not download data from USDUSD | GPBGBP | EUREUR and derivatives
  */
 package mx4.springboot.services.spi;
 
@@ -47,7 +48,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
     private static final String PRICE_CSV_URL_TEMPLATE = "https://www.alphavantage.co/query?function=%s&symbol=%s&apikey=%s&datatype=csv";
     private static final String FX_CSV_URL_TEMPLATE = "https://www.alphavantage.co/query?function=%s&from_symbol=%s&to_symbol=%s&apikey=%s&datatype=csv";
     private static final String API_ERROR_PREFIX = "{", SERVICE_NAME = "AlphaVantage Quote Service";
-    
+
     //
     @Value("${app.alphavantage.apikey}")
     private String API_KEY;
@@ -191,6 +192,20 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
         return dateQuotes;
     }
 
+    private void createQuotes(final List<DatedFXQuote> records, final double value, LocalDate lineDate, final Currency aaaCurrency, final Currency bbbCurrency, List<Currency> currencies) {
+        final int toCurrencyIndex = currencies.indexOf(bbbCurrency);
+        final int fromCurrencyIndex = currencies.indexOf(aaaCurrency);
+        //AAABBB
+        records.add(new DatedFXQuote(lineDate, aaaCurrency.getId(), bbbCurrency.getId(), aaaCurrency.getCode() + bbbCurrency.getCode(), value));
+        //AAABBX
+        records.add(new DatedFXQuote(lineDate, aaaCurrency.getId(), bbbCurrency.getId() + 1, aaaCurrency.getCode() + currencies.get(toCurrencyIndex + 1).getCode(), 100 * value));
+        //
+        //AAXBBB
+        records.add(new DatedFXQuote(lineDate, aaaCurrency.getId() + 1, bbbCurrency.getId(), currencies.get(fromCurrencyIndex + 1).getCode() + bbbCurrency.getCode(), value / 100.0));
+        //AAXBBX
+        records.add(new DatedFXQuote(lineDate, aaaCurrency.getId() + 1, bbbCurrency.getId() + 1, currencies.get(fromCurrencyIndex + 1).getCode() + currencies.get(toCurrencyIndex + 1).getCode(), value));
+    }
+
     private List<DatedQuotes> getFXQuotes(List<Currency> currencies, LocalDate startDate, LocalDate endDate, QuoteType type, List<String> failed) {
         final List<DatedQuotes> dateQuotes = new ArrayList<>();
 
@@ -208,15 +223,16 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
 
         for (final Currency fromCurrency : currencies) {
             if (fromCurrency.getCode().endsWith("X") == false) {
-                final int fromCurrencyIndex = currencies.indexOf(fromCurrency);
                 for (final Currency toCurrency : currencies) {
                     final String fxSymbol = String.format("%s%s", fromCurrency.getCode(), toCurrency.getCode());
+                    if (fromCurrency.getId() == toCurrency.getId()) {
+                        logger.info("Short-circuiting for  ::: '{}' and derivatives", fxSymbol);
+                        continue;
+                    }
                     if (resolvedPairs.contains(fxSymbol) == false && toCurrency.getCode().endsWith("X") == false) {
-                        //uniquePairs.add(new Currency[]{fromCurrency, toCurrency});
-                        final int toCurrencyIndex = currencies.indexOf(toCurrency);
                         try {
-                            //API is limited to 5 reqs per minute, in theory. So 12secs between requests is required. We use a random range between 15 to 30 secs
-                            final long delay = (long) ((Math.random() * 15000) + 15000);
+                            //API is limited to 5 reqs per minute, in theory. So 12secs between requests is required. We use a random range between 14 to 20 secs
+                            final long delay = (long) ((Math.random() * 14000) + 20000);
                             logger.info("Processing  ::: '{}'", fxSymbol);
                             Thread.sleep(delay);
 
@@ -250,47 +266,36 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
                                                     if (lineDate.isBefore(startDate) || lineDate.isAfter(endDate)) {
                                                         break;
                                                     }
+                                                    // add single currency types
                                                 } else if (index == 4) {
-                                                    //fx close
-                                                    final double aaabbb = Double.parseDouble(matcher.group());
-                                                    //AAABBB
-                                                    records.add(new DatedFXQuote(lineDate, fromCurrency.getId(), toCurrency.getId(), fxSymbol, aaabbb));
-                                                    //AAABBX
-                                                    records.add(new DatedFXQuote(lineDate, fromCurrency.getId(), toCurrency.getId() + 1, fromCurrency.getCode() + currencies.get(toCurrencyIndex + 1).getCode(), 100 * aaabbb));
-                                                    //
-                                                    //AAXBBB
-                                                    records.add(new DatedFXQuote(lineDate, fromCurrency.getId() + 1, toCurrency.getId(), currencies.get(fromCurrencyIndex + 1).getCode() + toCurrency.getCode(), aaabbb / 100.0));
-                                                    //AAXBBX
-                                                    records.add(new DatedFXQuote(lineDate, fromCurrency.getId() + 1, toCurrency.getId() + 1, currencies.get(fromCurrencyIndex + 1).getCode() + currencies.get(toCurrencyIndex + 1).getCode(), aaabbb));
-
-                                                    if (readLines == 0) {//do onliy when the first dataline in the csv is encountered
+                                                    if (readLines == 0) {//do only when the first dataline in the csv is encountered
                                                         resolvedPairs.add(fxSymbol);//mark this main pair as resolved
                                                     }
+                                                    //fx close
+                                                    final double aaabbb = Double.parseDouble(matcher.group());
+                                                    createQuotes(records, aaabbb, lineDate, fromCurrency, toCurrency, currencies);
+                                                    //AAABBB
+                                                    //AAABBX
+                                                    //AAXBBB
+                                                    //AAXBBX
 
-                                                    if (fromCurrency.getId() != toCurrency.getId()) {
-                                                        //get associated pair quotes and mark as reolved too. 
-                                                        //E.g if we just retrieved USDGBP above, we would have calculated USDGBP, USDGBX, USXGBP, USXGBX. 
-                                                        //But we can also right now have information to compute GBPUSD (the associated main pair) and derivatives e.g GBPUSD, GBXUSD,GBXUSX
+                                                    //get associated reverse pair quotes and mark as reolved too. 
+                                                    //E.g if we just retrieved USDGBP above, we would have calculated USDGBP, USDGBX, USXGBP, USXGBX. 
+                                                    //But we can also right now have information to compute GBPUSD (the associated main pair) and derivatives e.g GBPUSD, GBXUSD,GBXUSX
+                                                    final String fxSymbol2 = String.format("%s%s", toCurrency.getCode(), fromCurrency.getCode());
 
-                                                        final String fxSymbol2 = String.format("%s%s", toCurrency.getCode(), fromCurrency.getCode());
-
-                                                        if (readLines == 0) {//do onliy when the first dataline in the csv is encountered
-                                                            resolvedPairs.add(fxSymbol2);//mark tthe associated main pair as resolved so that it is not recomputed
-                                                            logger.info("\tCalculating  ::: '{}'", fxSymbol2);
-                                                        }
-
-                                                        final double bbbaaa = 1.0 / aaabbb;
-
-                                                        //BBBAAA
-                                                        records.add(new DatedFXQuote(lineDate, toCurrency.getId(), fromCurrency.getId(), fxSymbol2, bbbaaa));
-                                                        //BBBAAX
-                                                        records.add(new DatedFXQuote(lineDate, toCurrency.getId(), fromCurrency.getId() + 1, currencies.get(toCurrencyIndex).getCode() + currencies.get(fromCurrencyIndex + 1).getCode(), 100 * bbbaaa));
-                                                        //
-                                                        //BBXAAA
-                                                        records.add(new DatedFXQuote(lineDate, toCurrency.getId() + 1, fromCurrency.getId(), currencies.get(toCurrencyIndex + 1).getCode() + currencies.get(fromCurrencyIndex).getCode(), bbbaaa / 100.0));
-                                                        //BBXAAX
-                                                        records.add(new DatedFXQuote(lineDate, toCurrency.getId() + 1, fromCurrency.getId() + 1, currencies.get(toCurrencyIndex + 1).getCode() + currencies.get(fromCurrencyIndex + 1).getCode(), bbbaaa));
+                                                    if (readLines == 0) {//do only when the first dataline in the csv is encountered
+                                                        resolvedPairs.add(fxSymbol2);//mark the associated main pair as resolved so that it is not recomputed
+                                                        logger.info("\tCalculating  ::: '{}'", fxSymbol2);
                                                     }
+
+                                                    final double bbbaaa = 1.0 / aaabbb;
+                                                    createQuotes(records, bbbaaa, lineDate, toCurrency, fromCurrency, currencies);
+                                                    //BBBAAA
+                                                    //BBBAAX
+                                                    //BBXAAA
+                                                    //BBXAAX
+
                                                     break;
                                                 }
                                                 index++;
@@ -317,19 +322,24 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
 
         logger.info("Resolved FX pairs:::");
         resolvedPairs.stream().forEach(s -> logger.info("{} |", s));
+        
+        logger.info("Generating short circuited FX pairs and collecting results by date grouping . . .");
 
         if (hasError == false) {
+            //records.stream().collect(Collectors.groupingBy(DatedFXQuote::getDate)).
+            final double aaaxxx = 1.0;
             records.stream().collect(Collectors.groupingBy(DatedFXQuote::getDate)).forEach((k, v) -> {
                 final DatedQuotes dq = new DatedQuotes();
+                createQuotes(v, aaaxxx, k, currencies.get(0), currencies.get(0), currencies); // USD
+                createQuotes(v, aaaxxx, k, currencies.get(2), currencies.get(2), currencies); // GBP
+                createQuotes(v, aaaxxx, k, currencies.get(4), currencies.get(4), currencies); // EUR                
                 final List<FXQuote> oneDateQuotes = v.stream().map(h -> new FXQuote(h.getFrom(), h.getTo(), h.getCode(), h.getValue())).collect(Collectors.toList());
-                final LocalDate date = v.get(0).getDate();
-                dq.setDate(date);
+                dq.setDate(k);
                 dq.setFxQuotes(oneDateQuotes);
                 dateQuotes.add(dq);
             });
             dateQuotes.sort(Comparator.comparing(DatedQuotes::getDate));
         }
-
         return dateQuotes;
     }
 

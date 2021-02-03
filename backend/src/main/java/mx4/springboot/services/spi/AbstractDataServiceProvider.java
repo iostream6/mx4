@@ -92,7 +92,7 @@ public abstract class AbstractDataServiceProvider {
                 }
             }
         }
-        equityQuotes.removeAll(unmerged);// in the unstrict case, we want to drop all unmerged storck quotes
+        equityQuotes.removeAll(unmerged);// in the unstrict case, we want to drop all unmerged stock quotes
         return true;
     }
 
