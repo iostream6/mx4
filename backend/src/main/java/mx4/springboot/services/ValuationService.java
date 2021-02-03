@@ -80,7 +80,7 @@ public class ValuationService {
     @PostMapping("/admin/quotes")
     public ResponseEntity<?> createQuotes() {
         final Runnable r = () -> {
-            
+
             final List<Instrument> allInstruments = instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
             final List<Instrument> activeInstruments = allInstruments.stream().filter((i) -> i.isActive()).collect(Collectors.toList());
 
@@ -92,7 +92,7 @@ public class ValuationService {
                 logger.info("\t {} {} {}", status, i.getCode(), i.getDescription());
             });
             logger.info("INSTRUMENTS :: Active: {}, Inactive: {}", activeInstruments.size(), allInstruments.size() - activeInstruments.size());
-            
+
             final LocalDate now = LocalDate.now();
             final LocalDate startDate = now.minusMonths(1);
 
@@ -110,7 +110,7 @@ public class ValuationService {
                     return;
                 }
             }
-            
+
             final List<Instrument> failedStockQuotes = new ArrayList<>();
             final List<String> failedFXQuotes = new ArrayList<>();
 
@@ -123,7 +123,10 @@ public class ValuationService {
                 final List<DatedQuotes> quotes = rsQuotes.stream().filter(dqs -> {
                     return dqs.getFxQuotes() != null && dqs.getStockQuotes() != null && dqs.getDate().isBefore(cutOffDate);
                 }).collect(Collectors.toList());
-                logger.info("\n\n\n --- Historic quotes from {} ---", qp.getName());
+                logger.info("");
+                logger.info("");
+                logger.info("");
+                logger.info("--- Historic quotes from {} ---", qp.getName());
                 quotes.stream().forEach(dqs -> {
                     logger.info("{} --------------------------", dqs.getDate());
                     dqs.getStockQuotes().stream().forEach(q -> logger.info("STOCK\t{}\t{}", getSymbolFromId(activeInstruments, q.getCode()), nf.format(q.getValue())));
@@ -138,13 +141,15 @@ public class ValuationService {
             }
 
             if (failedStockQuotes.isEmpty() == false) {
-                logger.info("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+                logger.info("");
+                logger.info("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
                 failedStockQuotes.stream().forEach(f -> {
                     logger.warn(" --- {} historic quotes not found by {}", f.getCode(), qp.getName());//print the friendly name
                 });
             }
             if (failedFXQuotes.isEmpty() == false) {
-                logger.info("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+                logger.info("");
+                logger.info("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
                 failedFXQuotes.stream().forEach(f -> {
                     logger.warn(" --- {} historic FX quotes not found by {}", f, qp.getName());
                 });
@@ -165,7 +170,7 @@ public class ValuationService {
         List<DatedQuotes> dq = quotesRepository.findAll(PageRequest.of(0, 1, Sort.Direction.DESC, "date")).toList();
         if (dq.isEmpty()) {
             return ResponseEntity.notFound().build(); //sends http 404 
-        }
+        }     
         return ResponseEntity.ok(dq.get(0));
     }
 
@@ -334,11 +339,4 @@ public class ValuationService {
         target.addAll(filteredFrom.collect(Collectors.toList()));
 
     }
-
-    private List<Instrument> getActiveInstruments() {
-        final List<Instrument> instruments = instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
-        final List<Instrument> transactions = instrumentRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
-        return null;
-    }
-
 }
