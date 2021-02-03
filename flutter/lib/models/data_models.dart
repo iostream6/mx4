@@ -21,6 +21,7 @@ class User extends Transformable {
   String email;
   String userCode;
   String password;
+  Map<String, dynamic> preferences;
 
   User([id, this.username, this.email, this.userCode, this.password]) : super._(id);
 
@@ -158,7 +159,7 @@ class Instrument extends Transformable {
       'entityId': entityId,
       'code': code,
       'active': active,
-      'type': type
+      'type': type.toString()
     };
     if (id != null) {
       map['id'] = id;
