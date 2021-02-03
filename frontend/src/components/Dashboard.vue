@@ -8,6 +8,7 @@
 ***  2020.07.05 Implemented dashboard settings to control the plot parameters (range, time frequency, currency, etc.)
 ***  2020.09.23 Updated to use common revised values and fxr server API data model
 ***  2021.01.14 Update - Provisional data is excluded based on the provisional property of the transaction, no longer based on date being later than current
+***  2021.02.03 Client-side support added for inactive instruments (without quote data)
 -->
 
 <template>
@@ -189,8 +190,8 @@ export default {
         eux: this.fxr.find(item => item.from == 1001106 && item.to == baseCurrencyId).value
       };
       return fx;
-    },
-    dividends() {
+    },    
+     dividends() {
       const instrumentDivValues = [];
       const format = this.displayFormats[this.settings.currency];
       const formatter = new Intl.NumberFormat(format.locale, { style: "currency", currency: format.currency });
@@ -331,7 +332,7 @@ export default {
       divSums = { ytd: formatter.format(divSums.ytd), ttm: formatter.format(divSums.ttm), l5y: formatter.format(divSums.l5y), all: formatter.format(divSums.all) };
 
       return { sums: divSums, instrumentAccummulations: instrumentDivValues, dividendTimelineData: dividendTimelineData };
-    },
+     },
     valuations() {
       const vInstruments = []; //labels: [], unitValue: [], holdings: [] };
       const vPortfolios = []; //{ labels: [], holdings: [] };
@@ -341,6 +342,8 @@ export default {
         const valueIndex = this.values.findIndex(value => value.code == instrument.id);
         if (valueIndex > -1) {
           vInstruments.push({ label: instrument.code, valuation: 0, units: 0, unitValue: this.values[valueIndex].value });
+        }else{
+          vInstruments.push({ label: instrument.code, valuation: 0, units: 0, unitValue: 0 }); // this is an inactive instrument - we dont care about it!
         }
       }
 
@@ -366,6 +369,7 @@ export default {
             const units = t.type == "BUY" ? t.units : -t.units;
             const value = units * vInstruments[stockIndex].unitValue;
             let valueInBaseCurrency = 0;
+            //console.log(`DATA:: Units ${units}>> Rate:${vInstruments[stockIndex].unitValue}, Value:${value}, CURRENCY:${currencyIndex}`);
             switch (t.currencyCode) {
               case "USD":
                 valueInBaseCurrency = value * this.fx.usd;
