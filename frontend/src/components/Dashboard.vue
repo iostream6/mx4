@@ -9,6 +9,7 @@
 ***  2020.09.23 Updated to use common revised values and fxr server API data model
 ***  2021.01.14 Update - Provisional data is excluded based on the provisional property of the transaction, no longer based on date being later than current
 ***  2021.02.03 Client-side support added for inactive instruments (without quote data)
+***  2021.02.17 Instrument dividend chart can now combine divs of sold out positions, depending on user settings
 -->
 
 <template>
@@ -159,6 +160,11 @@
               <b-form-checkbox id="optIncludeProjected" v-model="dialogSettings.projectedDividends">Include provisional data</b-form-checkbox>
             </div>
           </div>
+          <div class="row">
+            <div class="form-group col-md-12 text-left">
+              <b-form-checkbox id="optAggregateInactiveDividends" v-model="dialogSettings.aggregateInactiveDivs">Aggregate dividends of inactive instruments</b-form-checkbox>
+            </div>
+          </div>
         </form>
       </b-modal>
     </div>
@@ -220,14 +226,27 @@ export default {
           ttm: 0,
           l5y: 0,
           all: 0,
-          code: instrument.code
+          code: instrument.code,
+          active: instrument.active
         });
       }
+
+      // extra slot for sold instruments
+      instrumentDivValues.push({
+          ytd: 0,
+          ttm: 0,
+          l5y: 0,
+          all: 0,
+          code: 'SOLD',
+          active: false
+        });
 
       const ytdDate = new Date(currentDate.getFullYear(), 0, 1);
       const ttmDate = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), currentDate.getDate());
       const l5yDate = new Date(currentDate.getFullYear() - 5, 0, 1);
       let index = -1;
+
+      const soldInstrumentDivValuesIndex = instrumentDivValues.length -1;
 
       let divSums = { ytd: 0, ttm: 0, l5y: 0, all: 0 };
 
@@ -236,7 +255,8 @@ export default {
           continue;
         }
         if (t.type == "DIV" && (index = instrumentDivValues.findIndex(value => value.code == t.instrumentCode)) > -1) {
-          const iDivValues = instrumentDivValues[index];
+
+          const iDivValues = instrumentDivValues[index].active == false && this.settings.aggregateInactiveDivs ?  instrumentDivValues[soldInstrumentDivValuesIndex]: instrumentDivValues[index];
           const value = t.units * t.amountPerUnit - t.fees - t.taxes;
           let valueInBaseCurrency = 0;
 
@@ -248,8 +268,6 @@ export default {
           const halfYearlyIndex = dividendTimelineData.halfYearly.dates.findIndex(finder);
           const quarterlyIndex = dividendTimelineData.quarterly.dates.findIndex(finder);
           const monthlyIndex = dividendTimelineData.monthly.dates.findIndex(finder);
-
-          //dividendTimelineData.halfYearly.
 
           if (yearlyIndex < 0 || halfYearlyIndex < 0 || quarterlyIndex < 0 || monthlyIndex < 0) {
             console.log(`Negative Index @  ${yearlyIndex} || ${halfYearlyIndex} || ${quarterlyIndex} || ${monthlyIndex}`);
@@ -779,8 +797,8 @@ export default {
       cumDivOptions: ["Year to date", "Trailing 12 months", "Last 5 years", "Entire Range"],
       divFreqOptions: ["Monthly", "Quarterly", "Half-yearly", "Yearly"],
       currencyOptions: ["British Pounds", "US Dollars"],
-      settings: { cumDiv: 3, divFreq: 2, currency: 0, projectedDividends: true },
-      dialogSettings: { cumDiv: 3, divFreq: 2, currency: 0, projectedDividends: true },
+      settings: { cumDiv: 3, divFreq: 2, currency: 0, projectedDividends: true, aggregateInactiveDivs: true },
+      dialogSettings: { cumDiv: 3, divFreq: 2, currency: 0, projectedDividends: true, aggregateInactiveDivs: true },
       chartColors: { bsb: "rgba(0,123,255, 1.0)", red: "rgb(255, 99, 132)", orange: "rgb(255, 159, 64)", yellow: "rgb(255, 205, 86)", green: "rgb(75, 192, 192)", blue: "rgb(54, 162, 235)", purple: "rgb(153, 102, 255)", grey: "rgb(231,233,237)" }
     };
   },
@@ -840,10 +858,10 @@ export default {
       return total;
     },
     updateDashboardSettings() {
-      this.settings = { cumDiv: this.dialogSettings.cumDiv, divFreq: this.dialogSettings.divFreq, currency: this.dialogSettings.currency, projectedDividends: this.dialogSettings.projectedDividends };
+      this.settings = { cumDiv: this.dialogSettings.cumDiv, divFreq: this.dialogSettings.divFreq, currency: this.dialogSettings.currency, projectedDividends: this.dialogSettings.projectedDividends , aggregateInactiveDivs: this.dialogSettings.aggregateInactiveDivs};
     },
     cancelDialog() {
-      this.dialogSettings = { cumDiv: this.settings.cumDiv, divFreq: this.settings.divFreq, currency: this.settings.currency, projectedDividends: this.settings.projectedDividends };
+      this.dialogSettings = { cumDiv: this.settings.cumDiv, divFreq: this.settings.divFreq, currency: this.settings.currency, projectedDividends: this.settings.projectedDividends, aggregateInactiveDivs: this.settings.aggregateInactiveDivs };
     }
   },
   mounted() {
