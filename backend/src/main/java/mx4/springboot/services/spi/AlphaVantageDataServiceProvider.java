@@ -3,6 +3,7 @@
  * 2020.09.22  - Improved implementation - added merge + rely on updated data model
  * 2020.09.24  - Added Logging support.
  * 2021.02.03  - FX quotes retrieval does not download data from USDUSD | GPBGBP | EUREUR and derivatives
+ * 2021.05.05  - Added ASML Amsterdam mapping
  */
 package mx4.springboot.services.spi;
 
@@ -72,6 +73,7 @@ public class AlphaVantageDataServiceProvider extends AbstractDataServiceProvider
         SYMBOL_MAP.put("SGE", "SGE.L");
         SYMBOL_MAP.put("ULVR", "ULVR.L");
         SYMBOL_MAP.put("WLDS", "WLDS.L");
+        SYMBOL_MAP.put("ASML", "ASML.AMS");
 
         // todo .. add more client to service space symbol mappings as appropriate!
     }
