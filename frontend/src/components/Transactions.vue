@@ -6,6 +6,7 @@
 ***  2020.06.11  - Implemented edit transaction, using the add transaction harness/forms.
 ***  2020.07.04  - Transaction provisional attribute now correctly populated by frontend add/edit UI
 ***  2020.07.05  - Added transaction clone functionality
+***  2021.05.29  - Updated the default number of transactions per page
 -->
 <template>
   <div id="layoutSidenav_content">
@@ -274,7 +275,7 @@ export default {
         filterOn: [],
         headerRowClass: "bg-primary text-light",
         currentPage: 1,
-        perPage: 30,
+        perPage: 50,
         pageOptions: [10, 20, 30, 50]
       }
     };
