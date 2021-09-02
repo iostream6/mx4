@@ -10,6 +10,7 @@
 ***  2021.01.14 Update - Provisional data is excluded based on the provisional property of the transaction, no longer based on date being later than current
 ***  2021.02.03 Client-side support added for inactive instruments (without quote data)
 ***  2021.02.17 Instrument dividend chart can now combine divs of sold out positions, depending on user settings
+***  2021.09.02 Enforced "Instrument Holdings" chart has zero min on y axis. USD now default currency.
 -->
 
 <template>
@@ -697,7 +698,7 @@ export default {
                 drawOnChartArea: false
                 //lineWidth: 1.0, color: 'rgba(0,123,255, 0.15)'
               },
-              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff" }
+              ticks: { fontSize: 16, fontStyle: "bold", fontColor: "#007bff", suggestedMin: 0 }
             }
           ]
         },
@@ -797,8 +798,8 @@ export default {
       cumDivOptions: ["Year to date", "Trailing 12 months", "Last 5 years", "Entire Range"],
       divFreqOptions: ["Monthly", "Quarterly", "Half-yearly", "Yearly"],
       currencyOptions: ["British Pounds", "US Dollars"],
-      settings: { cumDiv: 3, divFreq: 2, currency: 0, projectedDividends: true, aggregateInactiveDivs: true },
-      dialogSettings: { cumDiv: 3, divFreq: 2, currency: 0, projectedDividends: true, aggregateInactiveDivs: true },
+      settings: { cumDiv: 3, divFreq: 2, currency: 1, projectedDividends: true, aggregateInactiveDivs: true },
+      dialogSettings: { cumDiv: 3, divFreq: 2, currency: 1, projectedDividends: true, aggregateInactiveDivs: true },
       chartColors: { bsb: "rgba(0,123,255, 1.0)", red: "rgb(255, 99, 132)", orange: "rgb(255, 159, 64)", yellow: "rgb(255, 205, 86)", green: "rgb(75, 192, 192)", blue: "rgb(54, 162, 235)", purple: "rgb(153, 102, 255)", grey: "rgb(231,233,237)" }
     };
   },
